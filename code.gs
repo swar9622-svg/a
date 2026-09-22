@@ -740,3 +740,22 @@ function getWeakStudentsReport(className, section, units, token){
   function avg(vals,max){var a=vals.filter(function(v){return v!==null&&v!==''&&!isNaN(Number(v));}).map(Number);return a.length?Math.min(max,a.reduce(function(x,y){return x+y;},0)/a.length):0;}
   var out=[];roster.forEach(function(st){var h=[],a=[],c=[],e=[],tst=[],key=st.name+'|'+st.section,check=checkMap[key]||{},achRows=achMap[key]||[],testRow=tests[key]||{};units.forEach(function(u){var ids=idsByUnit[u]||[];ids.forEach(function(id){h.push(Number(st.hw[id])||0);var x=longActivityFind_(activity,st.name,st.section,id)||{};a.push(activityScoreValue_(x.score));c.push(Number(check[id])||0);});var es=achRows.filter(function(x){return x.unit===u&&x.target!=='test';}).map(function(x){return Number(x.score)||0;});e.push(es.length?Math.min(10,es.reduce(function(x,y){return x+y;},0)):0);tst.push(Math.min(20,Number(testRow[u])||0));});var r={name:st.name,className:className,section:st.section,homework:avg(h,10),activity:avg(a,10),check:avg(c,10),achievement:avg(e,10),test:avg(tst,20)};r.total=r.homework+r.activity+r.check+r.achievement+r.test;if(r.total<30)out.push(r);});return out.sort(function(x,y){return String(x.section||'').localeCompare(String(y.section||''),'ar',{numeric:true,sensitivity:'base'})||normalizeStudentName_(x.name).localeCompare(normalizeStudentName_(y.name),'ar',{numeric:true,sensitivity:'base'});});
 }
+
+
+/**
+ * يصدر لقطة بيانات للأوفلاين دون تعديل الجدول.
+ * كل الأوراق والصفوف والأعمدة الجديدة تنتقل إلى النسخة التالية.
+ */
+function exportOfflineSnapshot(token) {
+  requireTeacherSession_(token);
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheets = ss.getSheets().map(function(sh) {
+    var range = sh.getDataRange();
+    return {
+      name: sh.getName(),
+      hidden: sh.isSheetHidden(),
+      rows: range.getNumRows() ? range.getDisplayValues() : []
+    };
+  });
+  return {schema: 1, exportedAt: new Date().toISOString(), spreadsheetId: ss.getId(), sheets: sheets};
+}

@@ -129,6 +129,16 @@
 .advertisement-editor{padding:10px!important}.advertisement-editor label{margin:0 0 4px!important;font-size:13px}.advertisement-editor input,.advertisement-editor select,.advertisement-editor textarea{font-size:15px!important;padding:9px!important;min-height:42px}.advertisement-editor .ad-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:8px}.advertisement-editor .ad-row.single{grid-template-columns:1fr}.advertisement-editor textarea{min-height:130px!important;line-height:1.8!important;text-align:center!important;white-space:pre-wrap!important;resize:vertical!important}.ad-check{display:flex!important;align-items:center;gap:8px!important;margin:4px 0 8px!important}.ad-check input{width:20px!important;height:20px!important;min-height:20px!important}.ad-live-preview{margin:10px 0;padding:10px;border:2px dashed #c4b5fd;border-radius:12px;background:linear-gradient(135deg,#faf5ff,#eff6ff);text-align:center}.ad-live-preview strong{display:block;color:#6d28d9;margin-bottom:8px;font-size:12px}.ad-live-preview .student-advertisement-bubble{position:relative!important;top:auto!important;right:auto!important;left:auto!important;margin:0 auto;display:flex!important}.ad-preview-message{display:none;margin:10px auto 0;padding:10px;border-radius:9px;background:#fff;color:#334155;font-weight:800;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}.ad-preview-message.visible{display:block}.saved-ad-row{border:1px solid #ddd6fe;border-radius:9px;padding:8px;margin:6px 0;line-height:1.7;overflow-wrap:anywhere}.student-advertisement-bubble{box-sizing:border-box;width:max-content;min-width:0;max-width:calc(100vw - 24px);height:auto;min-height:42px;padding:8px 12px;gap:6px;border-radius:24px;white-space:normal;overflow:visible;cursor:grab;touch-action:none;user-select:none}.student-advertisement-bubble:active{cursor:grabbing}.student-advertisement-bubble .student-ad-icon{flex:0 0 auto;font-size:20px;line-height:1}.student-advertisement-bubble .student-ad-label{font-size:15px;max-width:none;overflow:visible;text-overflow:clip;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.3}.student-advertisement-bubble.ad-size-medium{min-height:48px;padding:9px 14px}.student-advertisement-bubble.ad-size-medium .student-ad-label{font-size:17px}.student-advertisement-bubble.ad-size-small{min-height:42px;padding:7px 11px}.student-advertisement-bubble.ad-size-small .student-ad-label{font-size:15px}.student-advertisement-bubble.ad-size-xsmall{min-height:36px;padding:5px 9px}.student-advertisement-bubble.ad-size-xsmall .student-ad-label{font-size:13px}.student-advertisement-bubble.ad-animation-pulse{animation:studentAdvertisementPulse 1.15s ease-in-out infinite}.student-advertisement-bubble.ad-animation-none{animation:none}.ad-message-modal{position:fixed;inset:0;z-index:2150;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(15,23,42,.45)}.ad-message-modal.visible{display:flex}.ad-message-card{width:min(92vw,520px);max-height:82dvh;overflow:auto;padding:20px;background:#fff;border:2px solid #c4b5fd;border-radius:16px;box-shadow:0 12px 35px rgba(15,23,42,.28);color:#334155;font-weight:800;font-size:17px;line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:420px){.advertisement-editor .ad-row{gap:6px}.advertisement-editor input,.advertisement-editor select{font-size:14px!important;padding:8px!important}}
 </style>
+
+<style id="offline-online-foundation">
+.app-mode-badge{position:fixed;top:7px;right:7px;z-index:100000;padding:4px 9px;border-radius:999px;background:#475569;color:#fff;font:900 11px/1.2 Arial,sans-serif;box-shadow:0 2px 8px #0004;direction:rtl;pointer-events:none}
+.app-mode-badge.online{background:#047857}.app-mode-badge.offline{background:#b45309}.app-mode-badge.local{background:#7c3aed}
+.offline-tools{position:fixed;top:34px;right:7px;z-index:100001;display:flex;gap:4px;flex-wrap:wrap;max-width:230px;background:#fff;border:1px solid #cbd5e1;border-radius:10px;padding:5px;box-shadow:0 4px 16px #0003;direction:rtl}
+.offline-tools[hidden]{display:none}.offline-tools button{border:0;border-radius:7px;padding:5px 7px;background:#334155;color:#fff;font:700 10px Arial,sans-serif;cursor:pointer}.offline-tools button:first-child{background:#047857}.offline-tools button:nth-child(2){background:#2563eb}.offline-tools button:last-of-type{background:#b91c1c}
+body.offline-mode .teacher-only-online,body.offline-mode [data-online-only]{opacity:.55}
+</style>
+
+<link rel="manifest" href="offline-manifest.json">
 </head>
 <style id="student-advertisements-style">
 .student-advertisements-bubbles{position:fixed;inset:0;z-index:2050;pointer-events:none}
@@ -138,6 +148,13 @@
 @keyframes studentAdvertisementPulse{0%,100%{transform:scale(1)}35%{transform:scale(1.14)}55%{transform:scale(.94)}75%{transform:scale(1.08)}}
 </style>
 <body>
+<div id="appModeBadge" class="app-mode-badge" role="status" aria-live="polite">● جارٍ تحديد الوضع</div>
+<div id="offlineTools" class="offline-tools" hidden>
+  <button type="button" id="offlineExportButton">تصدير نسخة أوفلاين</button>
+  <button type="button" id="offlineImportButton">استيراد نسخة</button>
+  <button type="button" id="offlineResetButton">مسح التعديلات المحلية</button>
+  <input id="offlineImportInput" type="file" accept=".html,.json,application/json,text/html" hidden>
+</div>
 
 <div class="app-container" id="appContainer">
     <!-- زر المعلم السري -->
@@ -944,6 +961,34 @@ function saveHomeworkGradeTable(){var d=window.hwGradeData||{},rows=(d.rows||[])
 })();
 </script>
 </body>
+
+<script id="offline-online-foundation">
+(function(){
+  'use strict';
+  var ONLINE = !!(window.google && google.script && google.script.run);
+  var DB_NAME='بوابة_الواجبات_المحلية', DB_VERSION=1, dbPromise;
+  var EMBEDDED = window.__OFFLINE_SNAPSHOT__ || null;
+  window.APP_MODE = ONLINE ? 'online' : 'offline';
+  window.OFFLINE_MODE = !ONLINE;
+  function updateBadge(extra){var b=document.getElementById('appModeBadge');if(!b)return;b.className='app-mode-badge '+(ONLINE?'online':'offline');b.textContent=ONLINE?'● أونلاين — البيانات من Google Sheets':'● أوفلاين — نسخة محلية / تجربة';if(extra)b.textContent+=' · '+extra;document.body.classList.toggle('offline-mode',!ONLINE);}
+  function openDb(){if(dbPromise)return dbPromise;dbPromise=new Promise(function(resolve,reject){var r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=function(){var d=r.result;if(!d.objectStoreNames.contains('snapshots'))d.createObjectStore('snapshots',{keyPath:'id'});if(!d.objectStoreNames.contains('operations'))d.createObjectStore('operations',{keyPath:'id',autoIncrement:true});};r.onsuccess=function(){resolve(r.result)};r.onerror=function(){reject(r.error)};});return dbPromise;}
+  function tx(store,mode,work){return openDb().then(function(db){return new Promise(function(resolve,reject){var t=db.transaction(store,mode),s=t.objectStore(store),result;try{result=work(s)}catch(e){reject(e);return}t.oncomplete=function(){resolve(result)};t.onerror=function(){reject(t.error)};});});}
+  function putSnapshot(s){if(!s||!s.sheets)return Promise.resolve();return tx('snapshots','readwrite',function(st){st.put({id:'current',snapshot:s,savedAt:new Date().toISOString()});});}
+  function getSnapshot(){return tx('snapshots','readonly',function(st){return new Promise(function(resolve,reject){var r=st.get('current');r.onsuccess=function(){resolve(r.result&&r.result.snapshot||null)};r.onerror=function(){reject(r.error)}});});}
+  function recordOp(name,args){return tx('operations','readwrite',function(st){st.add({name:name,args:Array.prototype.slice.call(args||[]),at:new Date().toISOString()});});}
+  function clearOps(){return tx('operations','readwrite',function(st){st.clear();});}
+  function download(name,text,type){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type||'text/plain;charset=utf-8'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);}
+  function exportHtmlWithSnapshot(s){var doc=document.documentElement.outerHTML;var tag='<script id="offline-snapshot">window.__OFFLINE_SNAPSHOT__='+JSON.stringify(s).replace(/</g,'\\u003c')+';<\\/script>';return '<!DOCTYPE html>\n'+doc.replace('</head>',tag+'</head>');}
+  function importText(text){var s=null;try{s=JSON.parse(text)}catch(e){try{var d=new DOMParser().parseFromString(text,'text/html'),node=d.getElementById('offline-snapshot');if(node){var raw=node.textContent.replace(/^\s*window\.__OFFLINE_SNAPSHOT__\s*=\s*/,'').replace(/;\s*$/,'');s=JSON.parse(raw)}}catch(x){}}if(!s||!s.sheets)return Promise.reject(new Error('لم يتم العثور على لقطة بيانات صالحة'));return putSnapshot(s).then(function(){updateBadge('تم تحديث النسخة المحلية')});}
+  function snapshotStudents(){var out={},s=window.__LOCAL_SNAPSHOT__;if(!s||!s.sheets)return out;(s.sheets||[]).forEach(function(sh){if(sh.name!=='سادس'&&sh.name!=='أول متوسط')return;var rows=sh.rows||[],list=[];rows.slice(1).forEach(function(r){if(r&&r[1])list.push({id:String(r[0]||'').trim(),name:String(r[1]||'').trim(),section:String(r[2]||'').trim()})});out[sh.name]=list});return out;}
+  function localResult(name,args){if(name==='loginTeacher')return {success:true,token:'offline-teacher-session',expiresIn:0};if(name==='logoutTeacher')return {success:true};if(name==='getStudentsData')return snapshotStudents();if(/^(save|add|update|delete|move|submit|upload|change|set|import)/.test(name)){recordOp(name,args);updateBadge('تعديلات محلية');return {success:true,message:'تم حفظ التعديل محليًا للتجربة فقط — لم يتغير Google Sheets'}}throw new Error('هذه الوظيفة تحتاج اتصالًا أو لم تُحوّل للأوفلاين بعد: '+name);}
+  function installOfflineBridge(){if(ONLINE)return;window.__LOCAL_SNAPSHOT__=EMBEDDED||null;var chain={success:null,failure:null};var run=new Proxy({}, {get:function(_,name){if(name==='withSuccessHandler')return function(fn){chain.success=fn;return run};if(name==='withFailureHandler')return function(fn){chain.failure=fn;return run};return function(){var args=arguments;getSnapshot().then(function(s){window.__LOCAL_SNAPSHOT__=s||window.__LOCAL_SNAPSHOT__;var value;try{value=localResult(name,args)}catch(e){if(chain.failure)chain.failure(e);else console.warn(e);chain.success=chain.failure=null;return}if(chain.success)chain.success(value);chain.success=chain.failure=null;});return run;}}});window.google={script:{run:run}};}
+  function setup(){updateBadge();if(!ONLINE&&'serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(function(){});if(!ONLINE)installOfflineBridge();var tools=document.getElementById('offlineTools');if(!tools)return;tools.hidden=ONLINE;function revealForTeacher(){if(!ONLINE)return;var token=window.teacherSessionToken||sessionStorage.getItem('teacherSessionToken');if(token)tools.hidden=false;}revealForTeacher();if(ONLINE)setInterval(revealForTeacher,1000);document.getElementById('offlineExportButton').onclick=function(){if(!ONLINE){getSnapshot().then(function(s){if(!s)return alert('لا توجد نسخة محفوظة بعد');download('بوابة-الواجبات-offline.html',exportHtmlWithSnapshot(s),'text/html;charset=utf-8')});return}var token=window.teacherSessionToken||sessionStorage.getItem('teacherSessionToken');if(!token)return alert('سجّل دخول المعلم أولًا ثم صدّر النسخة');google.script.run.withSuccessHandler(function(s){putSnapshot(s).then(function(){download('بوابة-الواجبات-offline.html',exportHtmlWithSnapshot(s),'text/html;charset=utf-8');alert('تم إنشاء نسخة الأوفلاين وتضمين آخر بيانات الجداول.')})}).withFailureHandler(function(e){alert('تعذر التصدير: '+(e.message||e))}).exportOfflineSnapshot(token)};document.getElementById('offlineImportButton').onclick=function(){document.getElementById('offlineImportInput').click()};document.getElementById('offlineImportInput').onchange=function(){var f=this.files&&this.files[0];if(!f)return;var reader=new FileReader();reader.onload=function(){importText(reader.result).then(function(){alert('تم استيراد النسخة ودمجها محليًا.')}).catch(function(e){alert(e.message||e)})};reader.readAsText(f);this.value=''};document.getElementById('offlineResetButton').onclick=function(){if(!confirm('مسح التعديلات المحلية فقط؟'))return;clearOps().then(function(){updateBadge('تم مسح التعديلات')})};}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
+  window.OfflineStore={getSnapshot:getSnapshot,putSnapshot:putSnapshot,recordOperation:recordOp,clearOperations:clearOps,mode:function(){return window.APP_MODE}};
+})();
+</script>
+
 </html>
 <style>
 .teacher-dashboard-back{top:6px!important;left:6px!important;right:auto!important;width:48px!important;min-width:48px!important;max-width:48px!important;height:25px!important;padding:0!important;font-size:10px!important;line-height:25px!important;}
