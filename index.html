@@ -6,10 +6,6 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>برهان فيثاغورس</title>
-<script>
-// غيّر عبارة السر النهائية يدويًا من هذا السطر:
-window.FINAL_SECRET = 'الوتر لا يكشف سره إلا لمن أتمّ البرهان!';
-</script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 html,body{margin:0;height:100%;overflow:hidden;background:#1a0f08;overscroll-behavior:none}
@@ -111,9 +107,9 @@ body{font-family:"Tajawal","Cairo","Noto Kufi Arabic","Segoe UI",Tahoma,Arial,sa
     <div class="levels">
       <button class="lvl" id="bStart">ابدأ اللعب</button>
     </div>
-    <p class="how">• القطع مرتبة داخل المربعين المرسومين على ضلعي الزاوية القائمة. اسحبها إلى المربع المرسوم على الوتر حتى يمتلئ تمامًا.<br>
-    • اضغط على القطعة لتحديدها، ثم استخدم زري التدوير والقلب الظاهرين فوقها.<br>
-    • خمس مراحل متتابعة: المرحلتان الرابعة والخامسة تتطلبان تدوير القطع وقلبها.</p>
+    <p class="how">• القطع مرتبة داخل المربعين المرسومين على ضلعي الزاوية القائمة. اسحبها وركّبها داخل المربع المرسوم على الوتر حتى يمتلئ تمامًا.<br>
+    • اضغط على القطعة لتحديدها، ثم أدِرها بالمقبض الذهبي أو بأزرار التدوير، واقلبها على ظهرها بزر القلب.<br>
+    • خمس مراحل متتابعة: عند حلّ المرحلة تنتقل إلى التي بعدها. في المرحلتين الرابعة والخامسة ستحتاج بعض القطع إلى التدوير والقلب على الوجه الآخر.</p>
   </div>
 </div>
 
@@ -131,6 +127,9 @@ body{font-family:"Tajawal","Cairo","Noto Kufi Arabic","Segoe UI",Tahoma,Arial,sa
 <canvas id="confetti" hidden></canvas>
 
 <script>
+// كلمة السر النهائية: غيّر النص بين علامتي الاقتباس إذا أردت تعديلها.
+const SECRET_WORD = 'متعة الرياضيات';
+
 /* =====================================================================
    الجزء الأول: الهندسة والمنطق (لا يعتمد على الواجهة)
    المثلث ثابت: زاوية قائمة عند (0,0)، الساق العمودية طولها ٤ والأفقية ٣ (بوحدات داخلية فقط)
@@ -194,10 +193,12 @@ function dissect(ox,oy){
 
 const LEVELS=[
   {id:'level1',name:'1/5',o:[2,2],mode:'place'},
-  {id:'level2',name:'2/5',o:[4,2.25],mode:'place'},
-  {id:'level3',name:'3/5',o:[2.385,-0.695],mode:'place'},
-  {id:'level4',name:'4/5',o:[1.95,2],mode:'place',goal:{axis:Math.atan2(HD[1],HD[0]),turns:1}},
-  {id:'level5',name:'5/5',o:[1.95,2],mode:'place',goal:{axis:Math.atan2(HD[1],HD[0])+Math.PI/4,turns:3}}
+  {id:'level2',name:'2/5',o:[4,2.25],mode:'place',flips:0,step:Math.PI/2},
+  {id:'level3',name:'3/5',o:[2.385,-0.695],mode:'place',flips:1,step:Math.PI/12},
+  // المرحلة 4: قطع المربع الكبير في مربعي الساقين مدوّرة؛ قطع المربع الأيسر مقلوبة أيضًا.
+  {id:'level4',name:'4/5',o:[1.6,0.9],mode:'place',trayTransforms:{L:{angle:Math.PI/2,flip:true},S:{angle:Math.PI/2,flip:false}}},
+  // المرحلة 5: تغيير اتجاه التحدي؛ قطع المربع الأيمن مدوّرة ومقلوبة مع بقاء القطع داخل المربعين.
+  {id:'level5',name:'5/5',o:[3.12,1.44],mode:'place',trayTransforms:{L:{angle:-Math.PI/2,flip:false},S:{angle:Math.PI/2,flip:true}}}
 ];
 
 let pieces=[],variants=[];
@@ -209,7 +210,7 @@ function buildPieces(def){
     const slot=r.poly.map(p=>[p[0]-ox,p[1]-4-oy]);
     const c=centroid(orig);
     return {idx:i,sq:r.sq,orig,slot,local:orig.map(p=>[p[0]-c[0],p[1]-c[1]]),
-            x:c[0],y:c[1],ang:0,av:0,flip:false,flipAxis:Math.PI/2,fa:null,lift:false,el:null};
+            x:c[0],y:c[1],ang:0,av:0,flip:false,fa:null,lift:false,el:null};
   });
 }
 /* الأوضاع الثمانية المتكافئة لتبليط مربع الوتر (دوران ومرآة) */
@@ -225,22 +226,9 @@ function makeVariants(slots){
   }
   return vs;
 }
-function makeGoalVariant(slots,axis,turns){
-  const c=Math.cos(axis),s=Math.sin(axis);
-  return slots.map(poly=>poly.map(p=>{
-    let x=p[0]-HC[0],y=p[1]-HC[1],dot=x*c+y*s;
-    x=2*dot*c-x;y=2*dot*s-y;
-    for(let i=0;i<turns;i++){const nx=-y;y=x;x=nx;}
-    return [x+HC[0],y+HC[1]];
-  }));
-}
 function worldVerts(pc){
-  const c=Math.cos(pc.ang),s=Math.sin(pc.ang),ax=pc.flipAxis??Math.PI/2,fx=Math.cos(ax),fy=Math.sin(ax);
-  return pc.local.map(v=>{
-    let lx=v[0],ly=v[1];
-    if(pc.flip){const dot=lx*fx+ly*fy;lx=2*dot*fx-lx;ly=2*dot*fy-ly;}
-    return [pc.x+c*lx-s*ly,pc.y+s*lx+c*ly];
-  });
+  const c=Math.cos(pc.ang),s=Math.sin(pc.ang),f=pc.flip?-1:1;
+  return pc.local.map(v=>{const lx=v[0]*f,ly=v[1];return [pc.x+c*lx-s*ly,pc.y+s*lx+c*ly];});
 }
 function bestMatch(W,S){
   const n=W.length;if(S.length!==n)return null;
@@ -297,7 +285,26 @@ function filledVariant(){
 /* توزيع القطع عند بدء المرحلة */
 function initPoses(def,ps,rnd){
   rnd=rnd||Math.random;
-  if(def.mode==='place')return;
+  if(def.mode==='place'){
+    // تحويل المربع كاملًا حول مركزه يحافظ على ترتيب القطع داخل مربعي الساقين.
+    // angle للتدوير، وflip لعكس الوجه؛ لذلك لا تخرج القطع من مربعاتها عند البداية.
+    if(def.trayTransforms){
+      const centers={L:[-2,-2],S:[1.5,1.5]};
+      ps.forEach(p=>{
+        const t=def.trayTransforms[p.sq];
+        if(!t)return;
+        const center=centers[p.sq];
+        let dx=p.x-center[0],dy=p.y-center[1];
+        if(t.flip)dx=-dx;
+        const c=Math.cos(t.angle),s=Math.sin(t.angle);
+        p.x=center[0]+c*dx-s*dy;
+        p.y=center[1]+s*dx+c*dy;
+        p.ang=p.av=t.angle;
+        p.flip=!!t.flip;
+      });
+    }
+    return;
+  }
   const cL=[-2,-2],cS=[1.5,1.5],k=0.22;
   ps.forEach(p=>{
     const c=p.sq==='L'?cL:cS;
@@ -311,9 +318,7 @@ function initPoses(def,ps,rnd){
     let a=1+Math.floor(rnd()*(steps-1));
     ps[i].ang=ps[i].av=a*def.step;
   });
-  if(def.flipIndices){
-    def.flipIndices.forEach(i=>{if(ps[i])ps[i].flip=true;});
-  }else if(def.flips){
+  if(def.flips){
     const nf=Math.max(3,Math.floor(ps.length/2));
     idx.slice(0,nf).forEach(i=>{ps[i].flip=true;});
   }
@@ -445,8 +450,7 @@ function render(pc){
     so=Math.cos(Math.PI*t);ang=pc.fa.ang;f=pc.fa.f;
     if(Math.abs(so)<.001)so=.001;
   }
-  const mirrorOffset=f<0?2*((pc.flipAxis??Math.PI/2)-Math.PI/2):0;
-  const deg=(ang+mirrorOffset)*180/Math.PI;
+  const deg=ang*180/Math.PI;
   const tf=(x,y)=>'translate('+x+' '+y+') scale('+so+' 1) rotate('+deg+') scale('+f+' 1)';
   pc.gEl.setAttribute('transform',tf(pc.x,pc.y));
   const o1=pc.lift?.2:.08,o2=pc.lift?.28:.12;
@@ -574,8 +578,7 @@ function startLevel(i){
   layer.textContent='';controls.textContent='';
   defs.querySelectorAll('.pp').forEach(n=>n.remove());
   pieces=buildPieces(def);
-  pieces.forEach(p=>{p.flipAxis=def.goal?def.goal.axis:Math.PI/2;});
-  variants=def.goal?[makeGoalVariant(pieces.map(p=>p.slot),def.goal.axis,def.goal.turns)]:makeVariants(pieces.map(p=>p.slot));
+  variants=makeVariants(pieces.map(p=>p.slot));
   initPoses(def,pieces);
   pieces.forEach(p=>{p.x=clampX(p.x);p.y=clampY(p.y);layer.append(mkPieceEl(p));render(p);});
   select(null);
@@ -591,8 +594,8 @@ function checkWin(){
     sfxWin();confetti();
     setTimeout(()=>{
       const last=cur>=LEVELS.length-1;
-      $('winTitle').textContent=last?'اكتشفت السر! أنهيت المراحل الخمس':'أحسنت! 🎉';
-      $('winMsg').textContent=last?'أنهيت المرحلة الخامسة! كلمة السر: «'+window.FINAL_SECRET+'» — أخبر بها معلمك لتثبت أنك أتممت التحدي.':'ملأت قطعُ المربعين الصغيرين المربعَ الكبير تمامًا — هذا هو برهان فيثاغورس!';
+      $('winTitle').textContent=last?'أحسنت! أنهيت جميع المراحل 🏆':'أحسنت! 🎉';
+      $('winMsg').textContent=last?('كلمة السر هي: '+SECRET_WORD):'ملأت قطعُ المربعين الصغيرين المربعَ الكبير تمامًا — هذا هو برهان فيثاغورس!';
       $('wNext').textContent=last?'ابدأ من جديد':'المرحلة التالية';
       $('win').hidden=false;
     },1100);
