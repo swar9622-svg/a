@@ -400,9 +400,9 @@ function mkPieceEl(pc){
   pc.el=w;pc.shEl=sh;pc.gEl=g;pc.faceEl=face;pc.selEl=sel;pc.pi=i;
   const cg=S('g',{'data-piece-controls':i,style:'display:none'});
   [['rotate','تدوير'],['flip','قلب']].forEach(([action,label],j)=>{
-    const x=(j-.5)*66,button=S('g',{'data-piece-control':i,'data-action':action,transform:'translate('+x+' 0)',style:'cursor:pointer'});
-    button.append(S('circle',{cx:0,cy:0,r:27,fill:'#ffd24a',stroke:'#6b3a0a','stroke-width':2.5}));
-    const icon=S('g',{transform:'translate(-12 -12)',fill:'none',stroke:'#6b3a0a','stroke-width':2.4,'stroke-linecap':'round','stroke-linejoin':'round'});
+    const x=(j-.5)*1.35,button=S('g',{'data-piece-control':i,'data-action':action,transform:'translate('+x+' 0)',style:'cursor:pointer'});
+    button.append(S('circle',{cx:0,cy:0,r:.55,fill:'#ffd24a',stroke:'#6b3a0a','stroke-width':.07}));
+    const icon=S('g',{transform:'translate(-.24 -.24) scale(.02)',fill:'none',stroke:'#6b3a0a','stroke-width':2.4,'stroke-linecap':'round','stroke-linejoin':'round'});
     if(action==='rotate'){
       icon.append(S('path',{d:'M20 12a8 8 0 1 1-2.6-5.9'}),S('path',{d:'M20.5 3.5v5h-5'}));
     }else{
@@ -432,8 +432,7 @@ function render(pc){
   pc.faceEl.setAttribute('fill','url(#'+((so*f)>0?'pf':'pb')+pc.pi+')');
   if(pc.ctrlEl){
     let mr=0;pc.local.forEach(v=>{mr=Math.max(mr,Math.hypot(v[0],v[1]));});
-    const u=vb.w/innerWidth;
-    pc.ctrlEl.setAttribute('transform','translate('+pc.x+' '+(pc.y-mr-32*u)+') scale('+u+')');
+    pc.ctrlEl.setAttribute('transform','translate('+pc.x+' '+(pc.y-mr-.8)+')');
   }
 }
 function kick(){if(!raf)raf=requestAnimationFrame(tick);}
@@ -457,7 +456,12 @@ function select(pc){
   placeHandle();
 }
 function placeHandle(){
-  $('handle').style.display='none';
+  const h=$('handle');
+  $('hcirc').style.display='none';$('harc').style.display='none';
+  if(!selected||solved){h.style.display='none';return;}
+  h.style.display='';
+  $('hline').setAttribute('x1',selected.x);$('hline').setAttribute('y1',selected.y);
+  $('hline').setAttribute('x2',selected.x);$('hline').setAttribute('y2',selected.y-Math.max(...selected.local.map(v=>Math.hypot(v[0],v[1])))-.8);
 }
 function settle(pc){
   if(trySnap(pc)){sfxSnap();kick();}
