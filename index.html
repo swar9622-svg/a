@@ -6,6 +6,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>برهان فيثاغورس</title>
+<script>
+// غيّر عبارة السر النهائية يدويًا من هذا السطر:
+window.FINAL_SECRET = 'الوتر لا يكشف سره إلا لمن أتمّ البرهان!';
+</script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 html,body{margin:0;height:100%;overflow:hidden;background:#1a0f08;overscroll-behavior:none}
@@ -189,9 +193,12 @@ function dissect(ox,oy){
 }
 
 const LEVELS=[
-  {id:'easy',name:'سهل',o:[2,2],mode:'place'},
-  {id:'hard',name:'صعب',o:[4,2.25],mode:'place',flips:0,step:Math.PI/2},
-  {id:'hardest',name:'أصعب',o:[2.385,-0.695],mode:'place',flips:1,step:Math.PI/12}
+  {id:'level1',name:'1/5',o:[2,2],mode:'place'},
+  {id:'level2',name:'2/5',o:[4,2.25],mode:'place'},
+  {id:'level3',name:'3/5',o:[2.385,-0.695],mode:'place'},
+  {id:'level4',name:'4/5',o:[3.2,-0.5],mode:'scramble',flips:0,step:Math.PI/2},
+  // القطعة رقم 0 مقلوبة عمدًا؛ اختبار التغطية يؤكد أن الحل يتطلب قلبها.
+  {id:'level5',name:'5/5',o:[2.385,-0.695],mode:'scramble',flipIndices:[0],step:Math.PI/2}
 ];
 
 let pieces=[],variants=[];
@@ -292,7 +299,9 @@ function initPoses(def,ps,rnd){
     let a=1+Math.floor(rnd()*(steps-1));
     ps[i].ang=ps[i].av=a*def.step;
   });
-  if(def.flips){
+  if(def.flipIndices){
+    def.flipIndices.forEach(i=>{if(ps[i])ps[i].flip=true;});
+  }else if(def.flips){
     const nf=Math.max(3,Math.floor(ps.length/2));
     idx.slice(0,nf).forEach(i=>{ps[i].flip=true;});
   }
@@ -568,8 +577,8 @@ function checkWin(){
     sfxWin();confetti();
     setTimeout(()=>{
       const last=cur>=LEVELS.length-1;
-      $('winTitle').textContent=last?'أحسنت! أنهيت جميع المراحل 🏆':'أحسنت! 🎉';
-      $('winMsg').textContent=last?'برهنتَ النظرية بثلاث طرق مختلفة لتقطيع المربعين!':'ملأت قطعُ المربعين الصغيرين المربعَ الكبير تمامًا — هذا هو برهان فيثاغورس!';
+      $('winTitle').textContent=last?'اكتشفت السر! أنهيت المراحل الخمس':'أحسنت! 🎉';
+      $('winMsg').textContent=last?'أنهيت المرحلة الخامسة! كلمة السر: «'+window.FINAL_SECRET+'» — أخبر بها معلمك لتثبت أنك أتممت التحدي.':'ملأت قطعُ المربعين الصغيرين المربعَ الكبير تمامًا — هذا هو برهان فيثاغورس!';
       $('wNext').textContent=last?'ابدأ من جديد':'المرحلة التالية';
       $('win').hidden=false;
     },1100);
