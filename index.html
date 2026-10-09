@@ -398,14 +398,18 @@ function mkPieceEl(pc){
   g.append(hit,face,sheen,sel);
   w.append(sh,g);
   pc.el=w;pc.shEl=sh;pc.gEl=g;pc.faceEl=face;pc.selEl=sel;pc.pi=i;
-  const cg=S('g',{'data-piece-controls':i});
-  [[-1,'تدوير عكسي'],[1,'تدوير']].forEach(([dir,label],j)=>{
-    const x=(j-.5)*46,button=S('g',{'data-piece-control':i,'data-rotate':dir,transform:'translate('+x+' 0)',style:'cursor:pointer'});
-    button.append(S('circle',{cx:0,cy:0,r:19,fill:'url(#sheen)',stroke:'#351708','stroke-width':2}),
-                   S('circle',{cx:0,cy:0,r:17,fill:'#693416',stroke:'#ffd9a0','stroke-width':1.5}));
-    const icon=S('g',{transform:'translate(-12 -12) scale(1)',fill:'none',stroke:'#ffe2b0','stroke-width':2.4,'stroke-linecap':'round','stroke-linejoin':'round'});
-    if(dir<0)icon.setAttribute('transform','translate(12 -12) scale(-1 1)');
-    icon.append(S('path',{d:'M20 12a8 8 0 1 1-2.6-5.9'}),S('path',{d:'M20.5 3.5v5h-5'}));
+  const cg=S('g',{'data-piece-controls':i,style:'display:none'});
+  [['rotate','تدوير'],['flip','قلب']].forEach(([action,label],j)=>{
+    const x=(j-.5)*66,button=S('g',{'data-piece-control':i,'data-action':action,transform:'translate('+x+' 0)',style:'cursor:pointer'});
+    button.append(S('circle',{cx:0,cy:0,r:27,fill:'#ffd24a',stroke:'#6b3a0a','stroke-width':2.5}));
+    const icon=S('g',{transform:'translate(-12 -12)',fill:'none',stroke:'#6b3a0a','stroke-width':2.4,'stroke-linecap':'round','stroke-linejoin':'round'});
+    if(action==='rotate'){
+      icon.append(S('path',{d:'M20 12a8 8 0 1 1-2.6-5.9'}),S('path',{d:'M20.5 3.5v5h-5'}));
+    }else{
+      icon.append(S('path',{d:'M12 2.5v19','stroke-dasharray':'2.2 2.4'}),
+                  S('path',{d:'M9 7L3.2 18H9z',fill:'#6b3a0a'}),
+                  S('path',{d:'M15 7l5.8 11H15z',fill:'#6b3a0a'}));
+    }
     button.append(icon);
     const title=S('title',{});title.textContent=label;button.append(title);cg.append(button);
   });
@@ -429,7 +433,7 @@ function render(pc){
   if(pc.ctrlEl){
     let mr=0;pc.local.forEach(v=>{mr=Math.max(mr,Math.hypot(v[0],v[1]));});
     const u=vb.w/innerWidth;
-    pc.ctrlEl.setAttribute('transform','translate('+pc.x+' '+(pc.y-mr-24*u)+') scale('+u+')');
+    pc.ctrlEl.setAttribute('transform','translate('+pc.x+' '+(pc.y-mr-32*u)+') scale('+u+')');
   }
 }
 function kick(){if(!raf)raf=requestAnimationFrame(tick);}
@@ -448,29 +452,12 @@ function tick(){
 function select(pc){
   selected=pc;
   pieces.forEach(p=>p.selEl&&p.selEl.setAttribute('opacity',p===pc?1:0));
+  pieces.forEach(p=>{if(p.ctrlEl)p.ctrlEl.style.display=p===pc&&!solved?'':'none';});
   ['tCW','tCCW','tFlip'].forEach(id=>{$(id).disabled=!pc||solved;});
   placeHandle();
 }
 function placeHandle(){
-  const h=$('handle');
-  if(!selected||solved){h.style.display='none';return;}
-  const pc=selected;
-  let mr=0;pc.local.forEach(v=>{mr=Math.max(mr,Math.hypot(v[0],v[1]));});
-  const rr=mr+.85;
-  const cand=[-90,0,180,90,-45,-135,45,135];
-  let pos=null;
-  for(const a of cand){
-    const r=a*Math.PI/180,x=pc.x+rr*Math.cos(r),y=pc.y+rr*Math.sin(r);
-    if(x>vb.x+.8&&x<vb.x+vb.w-.8&&y>vb.y+topUnits+.8&&y<vb.y+vb.h-.8){pos=[x,y];break;}
-  }
-  if(!pos)pos=[clampX(pc.x),clampY(pc.y-rr)];
-  h.style.display='';
-  $('hline').setAttribute('x1',pc.x);$('hline').setAttribute('y1',pc.y);
-  $('hline').setAttribute('x2',pos[0]);$('hline').setAttribute('y2',pos[1]);
-  $('hcirc').setAttribute('cx',pos[0]);$('hcirc').setAttribute('cy',pos[1]);
-  const cx=pos[0],cy=pos[1],R=.27;
-  $('harc').setAttribute('d','M'+(cx+R)+' '+cy+'A'+R+' '+R+' 0 1 1 '+cx+' '+(cy-R)+
-    'M'+(cx-R*.35)+' '+(cy-R*1.45)+'L'+(cx+R*.2)+' '+(cy-R)+'L'+(cx-R*.35)+' '+(cy-R*.55));
+  $('handle').style.display='none';
 }
 function settle(pc){
   if(trySnap(pc)){sfxSnap();kick();}
@@ -496,7 +483,8 @@ svg.addEventListener('pointerdown',e=>{
   e.preventDefault();e.stopPropagation();
   const pc=pieces[+control.getAttribute('data-piece-control')];
   if(!pc||solved)return;
-  select(pc);doRotate(+control.getAttribute('data-rotate'));
+  select(pc);
+  if(control.getAttribute('data-action')==='flip')doFlip();else doRotate(1);
 });
 $('tCW').onclick=()=>doRotate(1);
 $('tCCW').onclick=()=>doRotate(-1);
