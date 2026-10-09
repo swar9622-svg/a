@@ -74,6 +74,7 @@ body{font-family:"Tajawal","Cairo","Noto Kufi Arabic","Segoe UI",Tahoma,Arial,sa
   </defs>
   <g id="scene"></g>
   <g id="pieces"></g>
+  <g id="pieceControls"></g>
   <g id="handle" style="display:none">
     <line id="hline" stroke="#ffd24a" stroke-width=".07" stroke-dasharray=".18 .14" opacity=".9"/>
     <circle id="hcirc" r=".55" fill="#ffd24a" stroke="#6b3a0a" stroke-width=".07"/>
@@ -303,7 +304,7 @@ function initPoses(def,ps,rnd){
    ===================================================================== */
 const NS='http://www.w3.org/2000/svg',XL='http://www.w3.org/1999/xlink';
 const $=id=>document.getElementById(id);
-const svg=$('board'),scene=$('scene'),layer=$('pieces'),defs=svg.querySelector('defs');
+const svg=$('board'),scene=$('scene'),layer=$('pieces'),controls=$('pieceControls'),defs=svg.querySelector('defs');
 function S(tag,attrs){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
 const pts=poly=>poly.map(p=>p[0].toFixed(4)+','+p[1].toFixed(4)).join(' ');
 
@@ -397,6 +398,18 @@ function mkPieceEl(pc){
   g.append(hit,face,sheen,sel);
   w.append(sh,g);
   pc.el=w;pc.shEl=sh;pc.gEl=g;pc.faceEl=face;pc.selEl=sel;pc.pi=i;
+  const cg=S('g',{'data-piece-controls':i});
+  [[-1,'تدوير عكسي'],[1,'تدوير']].forEach(([dir,label],j)=>{
+    const x=(j-.5)*46,button=S('g',{'data-piece-control':i,'data-rotate':dir,transform:'translate('+x+' 0)',style:'cursor:pointer'});
+    button.append(S('circle',{cx:0,cy:0,r:19,fill:'url(#sheen)',stroke:'#351708','stroke-width':2}),
+                   S('circle',{cx:0,cy:0,r:17,fill:'#693416',stroke:'#ffd9a0','stroke-width':1.5}));
+    const icon=S('g',{transform:'translate(-12 -12) scale(1)',fill:'none',stroke:'#ffe2b0','stroke-width':2.4,'stroke-linecap':'round','stroke-linejoin':'round'});
+    if(dir<0)icon.setAttribute('transform','translate(12 -12) scale(-1 1)');
+    icon.append(S('path',{d:'M20 12a8 8 0 1 1-2.6-5.9'}),S('path',{d:'M20.5 3.5v5h-5'}));
+    button.append(icon);
+    const title=S('title',{});title.textContent=label;button.append(title);cg.append(button);
+  });
+  pc.ctrlEl=cg;controls.append(cg);
   return w;
 }
 function render(pc){
@@ -413,6 +426,11 @@ function render(pc){
   const o1=pc.lift?.2:.08,o2=pc.lift?.28:.12;
   pc.shEl.setAttribute('transform',tf(pc.x+o1,pc.y+o2));
   pc.faceEl.setAttribute('fill','url(#'+((so*f)>0?'pf':'pb')+pc.pi+')');
+  if(pc.ctrlEl){
+    let mr=0;pc.local.forEach(v=>{mr=Math.max(mr,Math.hypot(v[0],v[1]));});
+    const u=vb.w/innerWidth;
+    pc.ctrlEl.setAttribute('transform','translate('+pc.x+' '+(pc.y-mr-24*u)+') scale('+u+')');
+  }
 }
 function kick(){if(!raf)raf=requestAnimationFrame(tick);}
 function tick(){
@@ -472,6 +490,14 @@ function doFlip(){
   sfxPick();kick();render(pc);
   setTimeout(()=>{if(pieces.indexOf(pc)>=0&&!solved){settle(pc);placeHandle();}},280);
 }
+svg.addEventListener('pointerdown',e=>{
+  const control=e.target.closest('[data-piece-control]');
+  if(!control)return;
+  e.preventDefault();e.stopPropagation();
+  const pc=pieces[+control.getAttribute('data-piece-control')];
+  if(!pc||solved)return;
+  select(pc);doRotate(+control.getAttribute('data-rotate'));
+});
 $('tCW').onclick=()=>doRotate(1);
 $('tCCW').onclick=()=>doRotate(-1);
 $('tFlip').onclick=doFlip;
@@ -531,7 +557,7 @@ const pill=$('pill');
 function startLevel(i){
   cur=i;solved=false;selected=null;drag=null;rot=null;
   const def=LEVELS[i];
-  layer.textContent='';
+  layer.textContent='';controls.textContent='';
   defs.querySelectorAll('.pp').forEach(n=>n.remove());
   pieces=buildPieces(def);
   variants=makeVariants(pieces.map(p=>p.slot));
