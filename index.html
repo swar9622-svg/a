@@ -49,6 +49,7 @@ body{font-family:"Tajawal","Cairo","Noto Kufi Arabic","Segoe UI",Tahoma,Arial,sa
 .wbtns button.alt{background:linear-gradient(#d8b07a,#b98b52);color:#3a1d0a}
 #winCard h2{margin:0 0 6px;font-size:32px;color:#3a1d0a}
 #winCard p{margin:0;font-size:18px;line-height:1.7;color:#4a2410}
+#winCard p.secret{font-size:32px;font-weight:900;line-height:1.5;color:#3a1d0a}
 #confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9}
 </style>
 </head>
@@ -455,7 +456,7 @@ function render(pc){
   pc.gEl.setAttribute('transform',tf(pc.x,pc.y));
   const o1=pc.lift?.2:.08,o2=pc.lift?.28:.12;
   pc.shEl.setAttribute('transform',tf(pc.x+o1,pc.y+o2));
-  pc.faceEl.setAttribute('fill','url(#'+((so*f)>0?'pf':'pb')+pc.pi+')');
+  pc.faceEl.setAttribute('fill','url(#pf'+pc.pi+')'); // اللون موحد حتى عند قلب القطعة
   if(pc.ctrlEl){
     let mr=0;pc.local.forEach(v=>{mr=Math.max(mr,Math.hypot(v[0],v[1]));});
     pc.ctrlEl.setAttribute('transform','translate('+pc.x+' '+(pc.y-mr-.8)+')');
@@ -595,6 +596,7 @@ function checkWin(){
     setTimeout(()=>{
       const last=cur>=LEVELS.length-1;
       $('winTitle').textContent=last?'أحسنت! أنهيت جميع المراحل 🏆':'أحسنت! 🎉';
+      $('winMsg').classList.toggle('secret',last);
       $('winMsg').textContent=last?('كلمة السر هي: '+SECRET_WORD):'ملأت قطعُ المربعين الصغيرين المربعَ الكبير تمامًا — هذا هو برهان فيثاغورس!';
       $('wNext').textContent=last?'ابدأ من جديد':'المرحلة التالية';
       $('win').hidden=false;
