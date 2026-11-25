@@ -88,7 +88,7 @@ h1 em { color: var(--green); font-style: normal; }
 .upload-icon { font-size: 20px; line-height: 1; }
 #imageInput { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .scan-footnote { margin: 12px 2px 0; color: #8b958f; font-size: 10px; line-height: 1.7; }
-.camera-stage { position: relative; overflow: hidden; width: min(100%, 430px, calc(76svh * 0.75)); aspect-ratio: 3 / 4; background: #15201d; border-radius: 16px; margin: 0 auto 14px; min-height: 0; }
+.camera-stage { position: relative; overflow: hidden; width: min(100%, 560px, calc(76svh * 1.333)); aspect-ratio: 4 / 3; background: #15201d; border-radius: 16px; margin: 0 auto 14px; min-height: 0; }
 .camera-stage video { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; opacity: 0; pointer-events: none; }
 .camera-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .camera-stage .camera-feed { z-index: 1; }
@@ -1156,8 +1156,10 @@ function checkLiveFrame() {
 
 function syncCameraOrientation() {
   if (!cameraVideo.videoWidth || !cameraStage.clientWidth) return;
-  const rotateForPortrait = cameraVideo.videoWidth > cameraVideo.videoHeight && cameraStage.clientHeight > cameraStage.clientWidth;
-  cameraStage.classList.toggle('is-rotated', rotateForPortrait);
+  const sourceIsPortrait = cameraVideo.videoHeight > cameraVideo.videoWidth;
+  const stageIsPortrait = cameraStage.clientHeight > cameraStage.clientWidth;
+  const rotateForStage = sourceIsPortrait !== stageIsPortrait;
+  cameraStage.classList.toggle('is-rotated', rotateForStage);
 }
 
 function renderCameraPreview() {
@@ -1255,21 +1257,11 @@ function drawCameraOverlay(detection, probeWidth, probeHeight) {
 
 function captureFromCamera() {
   if (!activeStream || !cameraVideo.videoWidth) return;
-  const sourceWidth = cameraVideo.videoWidth;
-  const sourceHeight = cameraVideo.videoHeight;
-  const rotateForPortrait = cameraStage.classList.contains('is-rotated');
+  // Keep the raw camera frame for the scanner; the live view may be rotated to fit the horizontal stage.
   const canvas = document.createElement('canvas');
-  canvas.width = rotateForPortrait ? sourceHeight : sourceWidth;
-  canvas.height = rotateForPortrait ? sourceWidth : sourceHeight;
-  const context = canvas.getContext('2d');
-  if (rotateForPortrait) {
-    // Rotate the captured pixels exactly as the live preview is rotated.
-    context.translate(canvas.width / 2, canvas.height / 2);
-    context.rotate(Math.PI / 2);
-    context.drawImage(cameraVideo, -sourceWidth / 2, -sourceHeight / 2, sourceWidth, sourceHeight);
-  } else {
-    context.drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
-  }
+  canvas.width = cameraVideo.videoWidth;
+  canvas.height = cameraVideo.videoHeight;
+  canvas.getContext('2d').drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
   stopCamera();
   processSource(canvas);
 }
