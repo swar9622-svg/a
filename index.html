@@ -88,8 +88,8 @@ h1 em { color: var(--green); font-style: normal; }
 .upload-icon { font-size: 20px; line-height: 1; }
 #imageInput { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .scan-footnote { margin: 12px 2px 0; color: #8b958f; font-size: 10px; line-height: 1.7; }
-.camera-stage { position: relative; overflow: hidden; background: #15201d; border-radius: 16px; margin: 0 0 14px; min-height: 220px; display: grid; place-items: center; }
-.camera-stage video { display: block; width: 100%; max-height: min(54svh, 530px); object-fit: contain; }
+.camera-stage { position: relative; overflow: hidden; width: min(100%, 430px, 58svh); aspect-ratio: 3 / 4; background: #15201d; border-radius: 16px; margin: 0 auto 14px; min-height: 0; }
+.camera-stage video { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; }
 .camera-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .camera-badge { position: absolute; top: 12px; right: 12px; max-width: calc(100% - 24px); display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; color: #fff; background: #101a17c9; border: 1px solid #ffffff24; border-radius: 999px; font-size: 11px; backdrop-filter: blur(10px); }
 .camera-badge.has-markers .live-dot { background: #8fe0b3; box-shadow: 0 0 0 3px #8fe0b330; }
@@ -291,6 +291,8 @@ const PAGE_W = 900;
 const PAGE_H = Math.round(PAGE_W * 871 / 620);
 const OPTION_X = [0.5856, 0.4604, 0.3369, 0.2126];
 const ROW_Y = [0.1984, 0.2606, 0.3224, 0.3846, 0.4468, 0.5096, 0.5718, 0.6346, 0.6968, 0.7596, 0.8218, 0.8817];
+const GRID_X = [0.150, 0.274, 0.398, 0.523, 0.646, 0.857];
+const GRID_Y = [0.104, 0.167, 0.229, 0.291, 0.353, 0.415, 0.477, 0.539, 0.601, 0.664, 0.726, 0.788, 0.850, 0.913];
 const MARK_TARGETS = {
   tl: [PAGE_W * 0.026, PAGE_H * 0.018],
   tr: [PAGE_W * 0.974, PAGE_H * 0.018],
@@ -507,30 +509,90 @@ function otsuThreshold(imageData) {
   return Math.max(105, Math.min(175, threshold));
 }
 
-function sampleBubbles(rectified) {
+function refineGrid(rectified) {
+  const pixels = rectified.data;
+  const threshold = Math.max(135, Math.min(205, otsuThreshold(rectified) + 28));
+  const xRange = Math.round(PAGE_W * 0.012);
+  const yRange = Math.round(PAGE_H * 0.008);
+  const valueAt = (x, y) => {
+    const p = (y * PAGE_W + x) * 4;
+    return pixels[p] * 0.299 + pixels[p + 1] * 0.587 + pixels[p + 2] * 0.114;
+  };
+  const locate = (expected, axis, range) => {
+    const center = Math.round(expected * (axis === 'x' ? PAGE_W : PAGE_H));
+    const lo = Math.max(0, center - range);
+    const hi = Math.min((axis === 'x' ? PAGE_W : PAGE_H) - 1, center + range);
+    let bestPosition = center;
+    let bestStrength = -1;
+    for (let position = lo; position <= hi; position++) {
+      let strength = 0;
+      if (axis === 'x') {
+        for (let y = Math.round(PAGE_H * 0.13); y < Math.round(PAGE_H * 0.91); y++) {
+          strength += Math.max(0, threshold - valueAt(position, y));
+        }
+      } else {
+        for (let x = Math.round(PAGE_W * 0.15); x < Math.round(PAGE_W * 0.86); x++) {
+          strength += Math.max(0, threshold - valueAt(x, position));
+        }
+      }
+      if (strength > bestStrength || (strength === bestStrength && Math.abs(position - center) < Math.abs(bestPosition - center))) {
+        bestStrength = strength;
+        bestPosition = position;
+      }
+    }
+    return { ratio: bestPosition / (axis === 'x' ? PAGE_W : PAGE_H), strength: bestStrength };
+  };
+  const vertical = GRID_X.map(value => locate(value, 'x', xRange));
+  const horizontal = GRID_Y.map(value => locate(value, 'y', yRange));
+  const calibrated = [...vertical, ...horizontal].every(line => line.strength > 6000);
+  if (!calibrated) return { calibrated: false, optionX: OPTION_X, rowY: ROW_Y };
+  const optionX = [
+    (vertical[3].ratio + vertical[4].ratio) / 2,
+    (vertical[2].ratio + vertical[3].ratio) / 2,
+    (vertical[1].ratio + vertical[2].ratio) / 2,
+    (vertical[0].ratio + vertical[1].ratio) / 2,
+  ];
+  const rowY = Array.from({ length: 12 }, (_, i) => (horizontal[i + 1].ratio + horizontal[i + 2].ratio) / 2);
+  return { calibrated: true, optionX, rowY };
+}
+
+function sampleBubbles(rectified, grid) {
   const threshold = otsuThreshold(rectified);
   const pixels = rectified.data;
   const radius = Math.round(PAGE_W * 0.0146);
   const diskOffsets = [];
+  const paperOffsets = [];
   const r2 = radius * radius;
-  for (let dy = -radius; dy <= radius; dy++) {
-    for (let dx = -radius; dx <= radius; dx++) {
-      if (dx * dx + dy * dy <= r2) diskOffsets.push([dx, dy]);
+  for (let dy = -Math.round(radius * 1.65); dy <= Math.round(radius * 1.65); dy++) {
+    for (let dx = -Math.round(radius * 1.65); dx <= Math.round(radius * 1.65); dx++) {
+      const distance = dx * dx + dy * dy;
+      if (distance <= r2) diskOffsets.push([dx, dy]);
+      else if (distance >= (radius * 1.2) ** 2 && distance <= (radius * 1.65) ** 2) paperOffsets.push([dx, dy]);
     }
   }
+  const grayAt = (cx, cy, dx, dy) => {
+    const p = ((cy + dy) * PAGE_W + cx + dx) * 4;
+    return pixels[p] * 0.299 + pixels[p + 1] * 0.587 + pixels[p + 2] * 0.114;
+  };
   const scores = [];
-  for (const yRatio of ROW_Y) {
+  for (const yRatio of grid.rowY) {
     const row = [];
-    for (const xRatio of OPTION_X) {
+    for (const xRatio of grid.optionX) {
       const cx = Math.round(PAGE_W * xRatio);
       const cy = Math.round(PAGE_H * yRatio);
+      const paper = paperOffsets.map(([dx, dy]) => grayAt(cx, cy, dx, dy)).sort((a, b) => a - b);
+      const paperLevel = paper[Math.floor(paper.length * 0.6)] ?? 245;
+      const softThreshold = Math.max(90, paperLevel - 12);
       let dark = 0;
+      let soft = 0;
       for (const [dx, dy] of diskOffsets) {
-        const p = ((cy + dy) * PAGE_W + cx + dx) * 4;
-        const gray = pixels[p] * 0.299 + pixels[p + 1] * 0.587 + pixels[p + 2] * 0.114;
+        const gray = grayAt(cx, cy, dx, dy);
         if (gray < threshold) dark++;
+        if (gray < softThreshold) soft++;
       }
-      row.push(dark / diskOffsets.length);
+      const darkRatio = dark / diskOffsets.length;
+      const softRatio = soft / diskOffsets.length;
+      row.push(Math.max(darkRatio, softRatio * 0.62));
     }
     scores.push(row);
   }
@@ -583,11 +645,13 @@ async function processImageSource(source) {
   const detection = detectFiducials(sourceImage, width, height);
   if (!detection.ok) throw new Error(detection.reason);
   const rectified = warpPerspective(sourceImage, width, height, detection.corners);
-  const scores = sampleBubbles(rectified);
+  const grid = refineGrid(rectified);
+  const scores = sampleBubbles(rectified, grid);
   return {
     answers: classifyRows(scores),
     preview: makePreview(rectified),
     markerCount: detection.candidates.length,
+    gridCalibrated: grid.calibrated,
     dimensions: { width, height },
   };
 }
@@ -754,7 +818,7 @@ async function toggleCamera() {
   try {
     activeStream = await navigator.mediaDevices.getUserMedia({
       audio: false,
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1600 }, height: { ideal: 2200 } },
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 2560 } },
     });
     cameraVideo.srcObject = activeStream;
     cameraStage.hidden = false;
@@ -782,7 +846,7 @@ function checkLiveFrame() {
   const now = performance.now();
   if (now - lastScanAt >= 600) {
     lastScanAt = now;
-    const scale = Math.min(1, 360 / cameraVideo.videoWidth);
+    const scale = Math.min(1, 640 / cameraVideo.videoWidth);
     const width = Math.max(1, Math.round(cameraVideo.videoWidth * scale));
     const height = Math.max(1, Math.round(cameraVideo.videoHeight * scale));
     const probe = document.createElement('canvas');
@@ -879,7 +943,10 @@ async function processSource(source) {
     }));
     results.unshift({ id: nextResultId++, answers, preview: result.preview, answerKey: [...answerKey] });
     renderResults();
-    showMessage('اكتملت القراءة. راجع أي سؤال مميّز قبل اعتماد الدرجة.', 'success');
+    showMessage(result.gridCalibrated
+      ? 'تم التعرف على خطوط الجدول وضبط مراكز الفقاعات. راجع أي إجابة مميّزة قبل اعتماد الدرجة.'
+      : 'قُوّمت الورقة، واستخدمنا مواضع القالب الأساسية. لتحسين الدقة، أعد التصوير مع وضوح خطوط الجدول.'
+    , result.gridCalibrated ? 'success' : 'info');
     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
     showMessage(error?.message || 'تعذرت قراءة الصورة. تأكد من وضوح العلامات وجرب صورة أخرى.', 'error');
