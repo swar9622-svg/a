@@ -912,56 +912,69 @@ function drawAnswerSheet(canvas, scale = 1) {
   context.setTransform(scale, 0, 0, scale, 0, 0);
   context.fillStyle = '#fff';
   context.fillRect(0, 0, width, height);
-  context.fillStyle = '#111';
-  context.strokeStyle = '#171a18';
   context.textAlign = 'center';
   context.textBaseline = 'middle';
   context.direction = 'rtl';
-  context.font = 'bold 26px Tahoma, Arial, sans-serif';
-  context.fillText('نموذج الإجابة', width / 2, 65);
-  context.font = '16px Tahoma, Arial, sans-serif';
+
+  // Clean printable frame; deliberately kept well inside the four registration marks.
+  context.strokeStyle = '#293b34';
+  context.lineWidth = 2.5;
+  context.strokeRect(58, 58, width - 116, height - 116);
+  context.fillStyle = '#123f34';
+  context.font = 'bold 34px Tahoma, Arial, sans-serif';
+  context.fillText('نموذج الإجابة', width / 2, 91);
+  context.fillStyle = '#34443d';
+  context.font = 'bold 20px Tahoma, Arial, sans-serif';
   const colsText = n => n === 1 ? 'عمود واحد' : n === 2 ? 'عمودان' : `${arabicNumber.format(n)} أعمدة`;
   const optsText = n => n === 2 ? 'خياران' : `${arabicNumber.format(n)} خيارات`;
-  context.fillText(`${arabicNumber.format(formFormat.questionCount)} سؤالًا  ·  ${colsText(formFormat.columns)}  ·  ${optsText(formFormat.optionCount)}`, width / 2, 102);
+  context.fillText(`${arabicNumber.format(formFormat.questionCount)} سؤالًا  ·  ${colsText(formFormat.columns)}  ·  ${optsText(formFormat.optionCount)}`, width / 2, 135);
+  context.strokeStyle = '#aebdb4';
+  context.lineWidth = 1.5;
+  context.beginPath(); context.moveTo(100, 169); context.lineTo(width - 100, 169); context.stroke();
 
   const layout = getQuestionLayout(formFormat);
-  context.lineWidth = layout.legacy ? 2.2 : 1.6;
   if (layout.legacy) {
-    // Keep the legacy layout uncluttered; the printed bubble positions remain unchanged.
-    // Grid calibration is optional and falls back to these exact template coordinates.
-    context.font = 'bold 24px Tahoma, Arial, sans-serif';
-    context.fillText('السؤال', 0.75 * width, (layout.gridY[0] + layout.gridY[1]) * height / 2);
+    // Keep every legacy bubble center and size exactly aligned with the grading template.
+    const headerY = (layout.gridY[0] + layout.gridY[1]) * height / 2;
+    context.fillStyle = '#173f35';
+    context.font = 'bold 30px Tahoma, Arial, sans-serif';
+    context.fillText('رقم السؤال', 0.75 * width, headerY);
     layout.questions.forEach((question, index) => {
       const y = question.y * height;
-      context.font = 'bold 30px Tahoma, Arial, sans-serif';
+      context.fillStyle = '#172a23';
+      context.font = 'bold 34px Tahoma, Arial, sans-serif';
       context.fillText(arabicNumber.format(index + 1), question.questionX * width, y);
       question.xs.forEach((x, option) => {
         if (index === 0) {
-          context.font = 'bold 17px Tahoma, Arial, sans-serif';
-          context.fillText(letters[option], x * width, (layout.gridY[0] + layout.gridY[1]) * height / 2);
+          context.fillStyle = '#173f35';
+          context.font = 'bold 29px Tahoma, Arial, sans-serif';
+          context.fillText(letters[option], x * width, headerY);
         }
         context.beginPath();
-        context.arc(x * width, y, 24, 0, Math.PI * 2);
-        context.lineWidth = 4;
+        context.arc(x * width, y, 27, 0, Math.PI * 2);
+        context.strokeStyle = '#172a23';
+        context.lineWidth = 4.5;
         context.stroke();
       });
     });
   } else {
     const { top, headerH, rowH, qw, cellW, drawRadius, optionCount } = layout;
     layout.cols.forEach(col => {
-      // A single pale header rule separates labels from answers without boxing in the bubbles.
-      context.save();
-      context.strokeStyle = '#d9e0da';
-      context.lineWidth = 1.4;
-      context.beginPath(); context.moveTo(col.left, top + headerH); context.lineTo(col.right, top + headerH); context.stroke();
-      context.restore();
-      context.font = 'bold 14px Tahoma, Arial, sans-serif';
-      context.fillText('السؤال', col.right - qw / 2, top + headerH / 2);
-      context.font = 'bold 16px Tahoma, Arial, sans-serif';
+      context.fillStyle = '#eaf0eb';
+      context.fillRect(col.left, top, col.right - col.left, headerH);
+      context.strokeStyle = '#b8c7bd';
+      context.lineWidth = 1.5;
+      context.strokeRect(col.left, top, col.right - col.left, headerH);
+      context.fillStyle = '#173f35';
+      context.font = 'bold 22px Tahoma, Arial, sans-serif';
+      context.fillText('رقم السؤال', col.right - qw / 2, top + headerH / 2);
+      context.font = 'bold 26px Tahoma, Arial, sans-serif';
       for (let o = 0; o < optionCount; o++) context.fillText(letters[o], col.right - qw - (o + 0.5) * cellW, top + headerH / 2);
     });
-    context.font = `bold ${Math.round(Math.min(26, rowH * 0.45))}px Tahoma, Arial, sans-serif`;
-    context.lineWidth = Math.max(1.5, Math.min(3.5, drawRadius / 6));
+    context.fillStyle = '#172a23';
+    context.font = `bold ${Math.round(Math.min(34, rowH * 0.58))}px Tahoma, Arial, sans-serif`;
+    context.lineWidth = Math.max(1.8, Math.min(4, drawRadius / 5.5));
+    context.strokeStyle = '#172a23';
     layout.questions.forEach(question => {
       const y = question.y * height;
       context.fillText(arabicNumber.format(question.question + 1), question.questionX * width, y);
@@ -969,6 +982,8 @@ function drawAnswerSheet(canvas, scale = 1) {
     });
   }
 
+  // Registration squares remain at the exact coordinates used by the scanner.
+  context.fillStyle = '#000';
   const markerSize = 36;
   for (const [xRatio, yRatio] of [[0.026, 0.018], [0.974, 0.018], [0.026, 0.982], [0.974, 0.982]]) {
     context.fillRect(xRatio * width - markerSize / 2, yRatio * height - markerSize / 2, markerSize, markerSize);
