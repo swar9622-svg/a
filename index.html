@@ -88,8 +88,9 @@ h1 em { color: var(--green); font-style: normal; }
 .upload-icon { font-size: 20px; line-height: 1; }
 #imageInput { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .scan-footnote { margin: 12px 2px 0; color: #8b958f; font-size: 10px; line-height: 1.7; }
-.camera-stage { position: relative; overflow: hidden; width: min(100%, 430px, 58svh); aspect-ratio: 3 / 4; background: #15201d; border-radius: 16px; margin: 0 auto 14px; min-height: 0; }
+.camera-stage { position: relative; overflow: hidden; width: min(100%, 430px, calc(76svh * 0.75)); aspect-ratio: 3 / 4; background: #15201d; border-radius: 16px; margin: 0 auto 14px; min-height: 0; }
 .camera-stage video { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; }
+.camera-stage.is-rotated video { inset: auto; left: 50%; top: 50%; width: var(--rotated-video-width); height: var(--rotated-video-height); transform: translate(-50%, -50%) rotate(90deg); object-fit: contain; }
 .camera-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .camera-badge { position: absolute; top: 12px; right: 12px; max-width: calc(100% - 24px); display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; color: #fff; background: #101a17c9; border: 1px solid #ffffff24; border-radius: 999px; font-size: 11px; backdrop-filter: blur(10px); }
 .camera-badge.has-markers .live-dot { background: #8fe0b3; box-shadow: 0 0 0 3px #8fe0b330; }
@@ -629,7 +630,7 @@ function getQuestionLayout(format = {}) {
     };
   }
 
-  const gutter = 22, margin = 60, headerH = 38, top = 150;
+  const gutter = 30, margin = 48, headerH = 38, top = 150;
   const qw = questionCount > 99 ? 52 : 42;
   const rowsMax = Math.ceil(questionCount / columns);
   const cellW = Math.floor(Math.min(76, ((PAGE_W - margin * 2 - (columns - 1) * gutter) / columns - qw) / optionCount));
@@ -754,8 +755,9 @@ async function processImageSource(source, format = {}) {
   let gridCalibrated = true;
   if (layout.legacy) {
     const grid = refineGrid(rectified);
-    gridCalibrated = grid.calibrated;
     if (grid.calibrated) questions = questions.map((question, index) => ({ ...question, y: grid.rowY[index], xs: grid.optionX }));
+    // Without printed grid lines, the registered template coordinates are the fallback.
+    gridCalibrated = true;
   }
   const scores = sampleBubbles(rectified, questions);
   return {
@@ -921,12 +923,8 @@ function drawAnswerSheet(canvas, scale = 1) {
   const layout = getQuestionLayout(formFormat);
   context.lineWidth = layout.legacy ? 2.2 : 1.6;
   if (layout.legacy) {
-    layout.gridX.forEach(x => {
-      context.beginPath(); context.moveTo(x * width, layout.gridY[0] * height); context.lineTo(x * width, layout.gridY.at(-1) * height); context.stroke();
-    });
-    layout.gridY.forEach(y => {
-      context.beginPath(); context.moveTo(layout.gridX[0] * width, y * height); context.lineTo(layout.gridX.at(-1) * width, y * height); context.stroke();
-    });
+    // Keep the legacy layout uncluttered; the printed bubble positions remain unchanged.
+    // Grid calibration is optional and falls back to these exact template coordinates.
     context.font = 'bold 24px Tahoma, Arial, sans-serif';
     context.fillText('السؤال', 0.75 * width, (layout.gridY[0] + layout.gridY[1]) * height / 2);
     layout.questions.forEach((question, index) => {
@@ -947,16 +945,12 @@ function drawAnswerSheet(canvas, scale = 1) {
   } else {
     const { top, headerH, rowH, qw, cellW, drawRadius, optionCount } = layout;
     layout.cols.forEach(col => {
-      const bottom = top + headerH + col.rows * rowH;
-      context.lineWidth = 2;
-      for (let k = -1; k <= optionCount; k++) {
-        const x = k < 0 ? col.right : col.right - qw - k * cellW;
-        context.beginPath(); context.moveTo(x, top); context.lineTo(x, bottom); context.stroke();
-      }
-      for (let r = -1; r <= col.rows; r++) {
-        const y = r < 0 ? top : top + headerH + r * rowH;
-        context.beginPath(); context.moveTo(col.left, y); context.lineTo(col.right, y); context.stroke();
-      }
+      // A single pale header rule separates labels from answers without boxing in the bubbles.
+      context.save();
+      context.strokeStyle = '#d9e0da';
+      context.lineWidth = 1.4;
+      context.beginPath(); context.moveTo(col.left, top + headerH); context.lineTo(col.right, top + headerH); context.stroke();
+      context.restore();
       context.font = 'bold 14px Tahoma, Arial, sans-serif';
       context.fillText('السؤال', col.right - qw / 2, top + headerH / 2);
       context.font = 'bold 16px Tahoma, Arial, sans-serif';
@@ -1096,11 +1090,12 @@ async function toggleCamera() {
   try {
     activeStream = await navigator.mediaDevices.getUserMedia({
       audio: false,
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 2560 } },
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1080 }, height: { ideal: 1920 }, aspectRatio: { ideal: 0.75 } },
     });
     cameraVideo.srcObject = activeStream;
     cameraStage.hidden = false;
     await cameraVideo.play();
+    syncCameraOrientation();
     cameraButton.innerHTML = '<span class="button-icon" aria-hidden="true">×</span> إيقاف الكاميرا';
     cameraButton.classList.remove('button-primary');
     cameraButton.classList.add('button-secondary');
@@ -1154,9 +1149,23 @@ function checkLiveFrame() {
   cameraFrame = requestAnimationFrame(checkLiveFrame);
 }
 
+function syncCameraOrientation() {
+  if (!cameraVideo.videoWidth || !cameraStage.clientWidth) return;
+  const rotateForPortrait = cameraVideo.videoWidth > cameraVideo.videoHeight && cameraStage.clientHeight > cameraStage.clientWidth;
+  cameraStage.classList.toggle('is-rotated', rotateForPortrait);
+  if (rotateForPortrait) {
+    cameraVideo.style.setProperty('--rotated-video-width', `${cameraStage.clientHeight}px`);
+    cameraVideo.style.setProperty('--rotated-video-height', `${cameraStage.clientWidth}px`);
+  } else {
+    cameraVideo.style.removeProperty('--rotated-video-width');
+    cameraVideo.style.removeProperty('--rotated-video-height');
+  }
+}
+
 function drawCameraOverlay(detection, probeWidth, probeHeight) {
   const canvas = cameraOverlay;
   if (!cameraVideo.videoWidth || !cameraVideo.clientWidth) return;
+  syncCameraOrientation();
   const stageRect = cameraStage.getBoundingClientRect();
   const videoRect = cameraVideo.getBoundingClientRect();
   const pixelRatio = window.devicePixelRatio || 1;
@@ -1168,15 +1177,28 @@ function drawCameraOverlay(detection, probeWidth, probeHeight) {
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   context.clearRect(0, 0, stageWidth, stageHeight);
   if (!detection.ok) return;
-  const fitScale = Math.min(videoRect.width / cameraVideo.videoWidth, videoRect.height / cameraVideo.videoHeight);
-  const renderedWidth = cameraVideo.videoWidth * fitScale;
-  const renderedHeight = cameraVideo.videoHeight * fitScale;
-  const offsetX = videoRect.left - stageRect.left + (videoRect.width - renderedWidth) / 2;
-  const offsetY = videoRect.top - stageRect.top + (videoRect.height - renderedHeight) / 2;
-  const points = ['tl', 'tr', 'br', 'bl'].map(name => ({
-    x: detection.corners[name].x / probeWidth * renderedWidth + offsetX,
-    y: detection.corners[name].y / probeHeight * renderedHeight + offsetY,
-  }));
+  let points;
+  if (cameraStage.classList.contains('is-rotated')) {
+    const fitScale = Math.min(stageHeight / cameraVideo.videoWidth, stageWidth / cameraVideo.videoHeight);
+    points = ['tl', 'tr', 'br', 'bl'].map(name => {
+      const x = detection.corners[name].x / probeWidth * cameraVideo.videoWidth;
+      const y = detection.corners[name].y / probeHeight * cameraVideo.videoHeight;
+      return {
+        x: stageWidth / 2 + (cameraVideo.videoHeight / 2 - y) * fitScale,
+        y: stageHeight / 2 + (x - cameraVideo.videoWidth / 2) * fitScale,
+      };
+    });
+  } else {
+    const fitScale = Math.min(videoRect.width / cameraVideo.videoWidth, videoRect.height / cameraVideo.videoHeight);
+    const renderedWidth = cameraVideo.videoWidth * fitScale;
+    const renderedHeight = cameraVideo.videoHeight * fitScale;
+    const offsetX = videoRect.left - stageRect.left + (videoRect.width - renderedWidth) / 2;
+    const offsetY = videoRect.top - stageRect.top + (videoRect.height - renderedHeight) / 2;
+    points = ['tl', 'tr', 'br', 'bl'].map(name => ({
+      x: detection.corners[name].x / probeWidth * renderedWidth + offsetX,
+      y: detection.corners[name].y / probeHeight * renderedHeight + offsetY,
+    }));
+  }
   context.save();
   context.strokeStyle = '#76e0ad';
   context.lineWidth = Math.max(3, stageWidth / 260);
@@ -1226,8 +1248,8 @@ async function processSource(source) {
     const message = result.layoutType === 'configured'
       ? 'تمت قراءة الورقة حسب إعداد النموذج الحالي. راجع أي إجابة مميّزة قبل اعتماد الدرجة.'
       : result.gridCalibrated
-        ? 'تم التعرف على خطوط الجدول وضبط مراكز الفقاعات. راجع أي إجابة مميّزة قبل اعتماد الدرجة.'
-        : 'قُوّمت الورقة، واستخدمنا مواضع القالب الأساسية. لتحسين الدقة، أعد التصوير مع وضوح خطوط الجدول.';
+        ? 'تم ضبط مراكز الفقاعات وفق قالب الورقة الحالي. راجع أي إجابة مميّزة قبل اعتماد الدرجة.'
+        : 'قُوّمت الورقة، واستخدمنا مواضع القالب الأساسية. راجع أي إجابة مميّزة قبل اعتماد الدرجة.';
     showMessage(message, result.gridCalibrated ? 'success' : 'info');
     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
