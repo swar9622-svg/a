@@ -89,9 +89,11 @@ h1 em { color: var(--green); font-style: normal; }
 #imageInput { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .scan-footnote { margin: 12px 2px 0; color: #8b958f; font-size: 10px; line-height: 1.7; }
 .camera-stage { position: relative; overflow: hidden; width: min(100%, 430px, calc(76svh * 0.75)); aspect-ratio: 3 / 4; background: #15201d; border-radius: 16px; margin: 0 auto 14px; min-height: 0; }
-.camera-stage video { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; }
-.camera-stage.is-rotated video { inset: auto; left: 50%; top: 50%; width: var(--rotated-video-width); height: var(--rotated-video-height); transform: translate(-50%, -50%) rotate(90deg); object-fit: contain; }
+.camera-stage video { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; opacity: 0; pointer-events: none; }
 .camera-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.camera-stage .camera-feed { z-index: 1; }
+.camera-stage .camera-overlay { z-index: 2; }
+.camera-badge, .capture-button { z-index: 3; }
 .camera-badge { position: absolute; top: 12px; right: 12px; max-width: calc(100% - 24px); display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; color: #fff; background: #101a17c9; border: 1px solid #ffffff24; border-radius: 999px; font-size: 11px; backdrop-filter: blur(10px); }
 .camera-badge.has-markers .live-dot { background: #8fe0b3; box-shadow: 0 0 0 3px #8fe0b330; }
 .capture-button { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); width: 56px; height: 56px; display: grid; place-items: center; border: 3px solid #fff; border-radius: 50%; background: #ffffff3a; cursor: pointer; box-shadow: 0 2px 12px #0005; }
@@ -287,7 +289,8 @@ h1 em { color: var(--green); font-style: normal; }
 
         <div id="cameraStage" class="camera-stage" hidden>
           <video id="cameraVideo" autoplay muted playsinline aria-label="معاينة كاميرا تصوير ورقة الإجابة"></video>
-          <canvas id="cameraOverlay" aria-hidden="true"></canvas>
+          <canvas id="cameraFeed" aria-hidden="true"></canvas>
+          <canvas id="cameraOverlay" class="camera-overlay" aria-hidden="true"></canvas>
           <div id="cameraBadge" class="camera-badge"><span class="live-dot"></span><span id="cameraStatus">ابحث عن العلامات السوداء…</span></div>
           <button id="captureNow" class="capture-button" type="button" aria-label="التقاط الصورة الآن"><span></span></button>
         </div>
@@ -830,6 +833,7 @@ const fileButton = document.getElementById('fileButton');
 const imageInput = document.getElementById('imageInput');
 const cameraStage = document.getElementById('cameraStage');
 const cameraVideo = document.getElementById('cameraVideo');
+const cameraFeed = document.getElementById('cameraFeed');
 const cameraOverlay = document.getElementById('cameraOverlay');
 const cameraStatus = document.getElementById('cameraStatus');
 const cameraBadge = document.getElementById('cameraBadge');
@@ -1116,6 +1120,7 @@ function checkLiveFrame() {
     cameraFrame = requestAnimationFrame(checkLiveFrame);
     return;
   }
+  renderCameraPreview();
   const now = performance.now();
   if (now - lastScanAt >= 600) {
     lastScanAt = now;
@@ -1153,26 +1158,57 @@ function syncCameraOrientation() {
   if (!cameraVideo.videoWidth || !cameraStage.clientWidth) return;
   const rotateForPortrait = cameraVideo.videoWidth > cameraVideo.videoHeight && cameraStage.clientHeight > cameraStage.clientWidth;
   cameraStage.classList.toggle('is-rotated', rotateForPortrait);
-  if (rotateForPortrait) {
-    cameraVideo.style.setProperty('--rotated-video-width', `${cameraStage.clientHeight}px`);
-    cameraVideo.style.setProperty('--rotated-video-height', `${cameraStage.clientWidth}px`);
+}
+
+function renderCameraPreview() {
+  if (!cameraVideo.videoWidth || !cameraStage.clientWidth) return;
+  syncCameraOrientation();
+  const stageRect = cameraStage.getBoundingClientRect();
+  const stageWidth = Math.max(1, stageRect.width);
+  const stageHeight = Math.max(1, stageRect.height);
+  const pixelRatio = window.devicePixelRatio || 1;
+  const targetWidth = Math.round(stageWidth * pixelRatio);
+  const targetHeight = Math.round(stageHeight * pixelRatio);
+  if (cameraFeed.width !== targetWidth || cameraFeed.height !== targetHeight) {
+    cameraFeed.width = targetWidth;
+    cameraFeed.height = targetHeight;
+  }
+  const context = cameraFeed.getContext('2d');
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  context.clearRect(0, 0, stageWidth, stageHeight);
+  context.fillStyle = '#15201d';
+  context.fillRect(0, 0, stageWidth, stageHeight);
+  if (cameraStage.classList.contains('is-rotated')) {
+    const fitScale = Math.min(stageHeight / cameraVideo.videoWidth, stageWidth / cameraVideo.videoHeight);
+    const renderedWidth = cameraVideo.videoWidth * fitScale;
+    const renderedHeight = cameraVideo.videoHeight * fitScale;
+    context.save();
+    context.translate(stageWidth / 2, stageHeight / 2);
+    context.rotate(Math.PI / 2);
+    context.drawImage(cameraVideo, -renderedWidth / 2, -renderedHeight / 2, renderedWidth, renderedHeight);
+    context.restore();
   } else {
-    cameraVideo.style.removeProperty('--rotated-video-width');
-    cameraVideo.style.removeProperty('--rotated-video-height');
+    const fitScale = Math.min(stageWidth / cameraVideo.videoWidth, stageHeight / cameraVideo.videoHeight);
+    const renderedWidth = cameraVideo.videoWidth * fitScale;
+    const renderedHeight = cameraVideo.videoHeight * fitScale;
+    context.drawImage(cameraVideo, (stageWidth - renderedWidth) / 2, (stageHeight - renderedHeight) / 2, renderedWidth, renderedHeight);
   }
 }
 
 function drawCameraOverlay(detection, probeWidth, probeHeight) {
   const canvas = cameraOverlay;
-  if (!cameraVideo.videoWidth || !cameraVideo.clientWidth) return;
+  if (!cameraVideo.videoWidth || !cameraStage.clientWidth) return;
   syncCameraOrientation();
   const stageRect = cameraStage.getBoundingClientRect();
-  const videoRect = cameraVideo.getBoundingClientRect();
   const pixelRatio = window.devicePixelRatio || 1;
   const stageWidth = Math.max(1, stageRect.width);
   const stageHeight = Math.max(1, stageRect.height);
-  canvas.width = Math.round(stageWidth * pixelRatio);
-  canvas.height = Math.round(stageHeight * pixelRatio);
+  const targetWidth = Math.round(stageWidth * pixelRatio);
+  const targetHeight = Math.round(stageHeight * pixelRatio);
+  if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+  }
   const context = canvas.getContext('2d');
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   context.clearRect(0, 0, stageWidth, stageHeight);
@@ -1189,11 +1225,11 @@ function drawCameraOverlay(detection, probeWidth, probeHeight) {
       };
     });
   } else {
-    const fitScale = Math.min(videoRect.width / cameraVideo.videoWidth, videoRect.height / cameraVideo.videoHeight);
+    const fitScale = Math.min(stageWidth / cameraVideo.videoWidth, stageHeight / cameraVideo.videoHeight);
     const renderedWidth = cameraVideo.videoWidth * fitScale;
     const renderedHeight = cameraVideo.videoHeight * fitScale;
-    const offsetX = videoRect.left - stageRect.left + (videoRect.width - renderedWidth) / 2;
-    const offsetY = videoRect.top - stageRect.top + (videoRect.height - renderedHeight) / 2;
+    const offsetX = (stageWidth - renderedWidth) / 2;
+    const offsetY = (stageHeight - renderedHeight) / 2;
     points = ['tl', 'tr', 'br', 'bl'].map(name => ({
       x: detection.corners[name].x / probeWidth * renderedWidth + offsetX,
       y: detection.corners[name].y / probeHeight * renderedHeight + offsetY,
