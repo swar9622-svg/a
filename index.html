@@ -276,7 +276,7 @@ h1 em { color: var(--green); font-style: normal; }
           <div class="step-number">٣</div>
           <div class="heading-copy">
             <h2 id="scan-title">صوّر كرت الإجابة</h2>
-            <p>اجعل العلامات السوداء الأربع واضحة داخل الإطار.</p>
+            <p>صوّر الورقة كاملة من الأعلى، مع ظهور العلامات السوداء الأربع عند الزوايا.</p>
           </div>
         </div>
 
@@ -295,14 +295,15 @@ h1 em { color: var(--green); font-style: normal; }
         <div id="scanMessage" class="scan-message" role="status" aria-live="polite" hidden></div>
         <div class="scan-actions">
           <button id="cameraButton" class="button button-primary" type="button" disabled>
-            <span class="button-icon" aria-hidden="true">▣</span> افتح الكاميرا
+            <span class="button-icon" aria-hidden="true">▣</span> التقط صورة بالكاميرا
           </button>
           <label id="fileButton" class="button button-secondary is-disabled" aria-disabled="true">
             <span class="button-icon upload-icon" aria-hidden="true">↑</span> اختر صورًا
             <input id="imageInput" type="file" accept="image/*" multiple disabled aria-label="اختيار صور أوراق الإجابة" />
           </label>
+          <input id="nativeCameraInput" type="file" accept="image/*" capture="environment" hidden aria-label="التقاط صورة بالكاميرا الخلفية" />
         </div>
-        <p class="scan-footnote">يدعم صور JPG وPNG وHEIC حسب المتصفح. بإمكانك تصحيح أكثر من ورقة في الجلسة نفسها.</p>
+        <p class="scan-footnote">زر التصوير يفتح واجهة كاميرا الهاتف لالتقاط صورة عادية. يدعم رفع صور JPG وPNG وHEIC حسب المتصفح، ويمكن تصحيح أكثر من ورقة في الجلسة نفسها.</p>
       </section>
 
       <section id="resultsSection" class="results-section" aria-labelledby="results-title" hidden>
@@ -1412,7 +1413,13 @@ resultsList.addEventListener('change', event => {
   resultsList.querySelector(`.answer-select[data-result-id="${result.id}"][data-question="${question}"]`)?.focus();
 });
 
-cameraButton.addEventListener('click', toggleCamera);
+const nativeCameraInput = document.getElementById('nativeCameraInput');
+cameraButton.addEventListener('click', () => nativeCameraInput.click());
+nativeCameraInput.addEventListener('change', event => {
+  const photo = event.target.files?.[0];
+  event.target.value = '';
+  if (photo) processSource(photo);
+});
 questionCountInput.addEventListener('input', updateBuilderFormat);
 columnCountInput.addEventListener('change', updateBuilderFormat);
 optionCountInput.addEventListener('change', updateBuilderFormat);
