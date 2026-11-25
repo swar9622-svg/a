@@ -916,10 +916,7 @@ function drawAnswerSheet(canvas, scale = 1) {
   context.textBaseline = 'middle';
   context.direction = 'rtl';
 
-  // Clean printable frame; deliberately kept well inside the four registration marks.
-  context.strokeStyle = '#293b34';
-  context.lineWidth = 2.5;
-  context.strokeRect(58, 58, width - 116, height - 116);
+  // Frame is drawn after layout so it can hug the actual question grid.
   context.fillStyle = '#123f34';
   context.font = 'bold 34px Tahoma, Arial, sans-serif';
   context.fillText('نموذج الإجابة', width / 2, 91);
@@ -934,6 +931,9 @@ function drawAnswerSheet(canvas, scale = 1) {
 
   const layout = getQuestionLayout(formFormat);
   if (layout.legacy) {
+    context.strokeStyle = '#293b34';
+    context.lineWidth = 2.5;
+    context.strokeRect(58, 58, width - 116, height - 116);
     // Keep every legacy bubble center and size exactly aligned with the grading template.
     const headerY = (layout.gridY[0] + layout.gridY[1]) * height / 2;
     context.fillStyle = '#173f35';
@@ -959,6 +959,12 @@ function drawAnswerSheet(canvas, scale = 1) {
     });
   } else {
     const { top, headerH, rowH, qw, cellW, drawRadius, optionCount } = layout;
+    const left = Math.min(...layout.cols.map(col => col.left)) - 28;
+    const right = Math.max(...layout.cols.map(col => col.right)) + 28;
+    const bottom = top + headerH + layout.rowsMax * rowH + 24;
+    context.strokeStyle = '#293b34';
+    context.lineWidth = 2.5;
+    context.strokeRect(left, 48, right - left, Math.min(height - 96, bottom - 48));
     layout.cols.forEach(col => {
       context.fillStyle = '#eaf0eb';
       context.fillRect(col.left, top, col.right - col.left, headerH);
