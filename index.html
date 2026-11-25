@@ -204,12 +204,15 @@ h1 em { color: var(--green); font-style: normal; }
 .builder-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
 .builder-hint { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
 .builder-hint.is-warning { color: var(--amber); }
+.builder-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+.builder-actions .button { min-height: 42px; padding-inline: 12px; font-size: 11px; }
 @media (max-width: 520px) {
   .form-builder-controls { gap: 7px; }
   .builder-field { font-size: 10px; }
   .builder-field input, .builder-field select { padding-inline: 6px; font-size: 12px; }
   .builder-footer { align-items: stretch; flex-direction: column; }
-  .builder-footer .button { width: 100%; }
+  .builder-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .builder-actions .button { width: 100%; }
 }
 
 .key-grid[data-options="5"], .key-grid[data-options="6"] { grid-template-columns: 1fr; }
@@ -253,7 +256,12 @@ h1 em { color: var(--green); font-style: normal; }
         </div>
         <div class="builder-footer">
           <p id="builderHint" class="builder-hint">إعداداتك الحالية تطابق مفتاح الإجابة أدناه.</p>
-          <button id="downloadForm" class="button button-primary" type="button"><span class="button-icon" aria-hidden="true">↓</span> تنزيل الورقة PNG</button>
+          <div class="builder-actions">
+            <button id="downloadForm" class="button button-primary" type="button"><span class="button-icon" aria-hidden="true">↓</span> تنزيل الورقة PNG</button>
+            <button id="exportTemplate" class="button button-secondary" type="button"><span class="button-icon" aria-hidden="true">⇩</span> ملف التصحيح</button>
+            <label class="button button-secondary" for="templateInput"><span class="button-icon" aria-hidden="true">↑</span> استيراد ملف</label>
+            <input id="templateInput" type="file" accept=".sahih,application/json" hidden />
+          </div>
         </div>
       </section>
 
@@ -615,7 +623,9 @@ function getQuestionLayout(format = {}) {
   const questionCount = Math.max(1, Math.min(100, Math.round(Number(format.questionCount) || 12)));
   const requestedColumns = Math.max(1, Math.min(4, Math.round(Number(format.columns) || 1)));
   const optionCount = Math.max(2, Math.min(6, Math.round(Number(format.optionCount) || 4)));
-  const legacy = questionCount === 12 && requestedColumns === 1 && optionCount === 4;
+  // النماذج الجديدة تستخدم تخطيطًا ديناميكيًا حتى مع ١٢ سؤالًا وعمود واحد.
+  // يبقى قالب legacy متاحًا فقط عند طلبه صراحةً للتوافق مع أوراق قديمة.
+  const legacy = format.legacy === true && questionCount === 12 && requestedColumns === 1 && optionCount === 4;
   const columns = Math.min(requestedColumns, questionCount);
   if (legacy) {
     return {
@@ -660,7 +670,71 @@ function getQuestionLayout(format = {}) {
       });
     }
   }
-  return { questionCount, columns, requestedColumns, optionCount, legacy: false, rowsMax, cellW, rowH, drawRadius, qw, top, headerH, cols, questions };
+  const frame = {
+    left: Math.min(...cols.map(col => col.left)) - 28,
+    right: Math.max(...cols.map(col => col.right)) + 28,
+    top: 48,
+    bottom: Math.min(PAGE_H - 72, top + headerH + rowsMax * rowH - rowH / 2 + drawRadius + Math.max(22, rowH * 0.34)),
+  };
+  const saved = format.savedTemplate;
+  const sameFormat = saved && saved.questionCount === questionCount && saved.columns === columns && saved.optionCount === optionCount;
+  if (sameFormat && Array.isArray(saved.questions) && saved.questions.length === questions.length) {
+    return {
+      questionCount, columns, requestedColumns, optionCount, legacy: false, rowsMax,
+      cellW: saved.cellW || cellW, rowH: saved.rowH || rowH, drawRadius: saved.drawRadius || drawRadius,
+      qw, top, headerH, cols, questions: saved.questions, frame: saved.frame || frame,
+    };
+  }
+  return { questionCount, columns, requestedColumns, optionCount, legacy: false, rowsMax, cellW, rowH, drawRadius, qw, top, headerH, cols, questions, frame };
+}
+
+function saveAnswerTemplate(format, layout, renderHeight = PAGE_H) {
+  if (!layout || layout.legacy) return;
+  try {
+    // تحويل دقيق بين موضعي علامتي التسجيل العلوية والسفلية بعد قص الورقة.
+    const sourceTop = 0.018 * PAGE_H;
+    const sourceBottom = 0.982 * renderHeight;
+    const targetTop = 0.018 * PAGE_H;
+    const targetBottom = 0.982 * PAGE_H;
+    const mapPrintedYToScanY = value => targetTop + (value - sourceTop) * (targetBottom - targetTop) / (sourceBottom - sourceTop);
+    localStorage.setItem('sahih-answer-template', JSON.stringify({
+      version: 2,
+      questionCount: layout.questionCount,
+      columns: layout.columns,
+      optionCount: layout.optionCount,
+      code: format.code,
+      cellW: layout.cellW,
+      rowH: layout.rowH,
+      drawRadius: layout.drawRadius,
+      frame: layout.frame,
+      // الإحداثيات هنا هي إحداثيات الصورة المطبوعة بعد قص المساحة البيضاء.
+      questions: layout.questions.map(question => ({ ...question, y: mapPrintedYToScanY(question.y * PAGE_H) / PAGE_H })),
+    }));
+  } catch (_) {}
+}
+
+function loadAnswerTemplate() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('sahih-answer-template') || 'null');
+    return saved?.version === 2 ? saved : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function createUniqueDesignCode() {
+  let used = [];
+  try { used = JSON.parse(localStorage.getItem('sahih-design-codes') || '[]'); } catch (_) {}
+  const usedSet = new Set(used);
+  let code = '';
+  do {
+    const values = new Uint32Array(8);
+    if (crypto?.getRandomValues) crypto.getRandomValues(values);
+    code = Array.from(values, value => String(value % 10)).join('');
+  } while (usedSet.has(code));
+  used.push(code);
+  try { localStorage.setItem('sahih-design-codes', JSON.stringify(used.slice(-1000))); } catch (_) {}
+  return code;
 }
 
 function sampleBubbles(rectified, questions) {
@@ -813,7 +887,8 @@ function optionLabel(index) {
 
 const letters = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
 const arabicNumber = new Intl.NumberFormat('ar-EG', { useGrouping: false });
-let formFormat = { questionCount: 12, columns: 2, optionCount: 4 };
+const initialTemplate = loadAnswerTemplate();
+let formFormat = { questionCount: 12, columns: 2, optionCount: 4, dynamic: true, code: initialTemplate?.code || createUniqueDesignCode() };
 const answerKey = Array(formFormat.questionCount).fill(null);
 const results = [];
 let nextResultId = 1;
@@ -850,6 +925,8 @@ const optionCountInput = document.getElementById('optionCount');
 const formPreview = document.getElementById('formPreview');
 const builderHint = document.getElementById('builderHint');
 const downloadFormButton = document.getElementById('downloadForm');
+const exportTemplateButton = document.getElementById('exportTemplate');
+const templateInput = document.getElementById('templateInput');
 
 function renderKey() {
   answerKeyEl.innerHTML = '';
@@ -907,10 +984,14 @@ function updateKeyState(rerenderResults = true) {
 
 function drawAnswerSheet(canvas, scale = 1) {
   const width = 900;
-  const height = 1273;
+  const layout = getQuestionLayout(formFormat);
+  // ارتفاع الورقة يتبع الإطار؛ لا نترك مساحة بيضاء أسفل الجدول.
+  const height = layout.legacy ? PAGE_H : Math.min(PAGE_H, Math.ceil(layout.frame.bottom + 34));
+  saveAnswerTemplate(formFormat, layout, height);
   canvas.width = width * scale;
   canvas.height = height * scale;
   const context = canvas.getContext('2d');
+  // لا نضغط الرسم رأسيًا حتى تبقى الدوائر دائرية؛ نقتص الصفحة فقط.
   context.setTransform(scale, 0, 0, scale, 0, 0);
   context.fillStyle = '#fff';
   context.fillRect(0, 0, width, height);
@@ -931,18 +1012,27 @@ function drawAnswerSheet(canvas, scale = 1) {
   context.lineWidth = 1.5;
   context.beginPath(); context.moveTo(100, 169); context.lineTo(width - 100, 169); context.stroke();
 
-  const layout = getQuestionLayout(formFormat);
+  // كود التصميم: عموديًا في الهامش الأيسر بين علامتي التسجيل.
+  context.save();
+  context.translate(34, (0.018 * PAGE_H + 0.982 * height) / 2);
+  context.rotate(-Math.PI / 2);
+  context.direction = 'ltr';
+  context.fillStyle = '#586a62';
+  context.font = 'bold 18px Tahoma, Arial, sans-serif';
+  context.fillText(String(formFormat.code || ''), 0, 0);
+  context.restore();
+
   if (layout.legacy) {
     context.strokeStyle = '#293b34';
     context.lineWidth = 2.5;
-    context.strokeRect(58, 58, width - 116, height - 116);
+    context.strokeRect(58, 58, width - 116, PAGE_H - 116);
     // Keep every legacy bubble center and size exactly aligned with the grading template.
-    const headerY = (layout.gridY[0] + layout.gridY[1]) * height / 2;
+    const headerY = (layout.gridY[0] + layout.gridY[1]) * PAGE_H / 2;
     context.fillStyle = '#173f35';
     context.font = 'bold 34px Tahoma, Arial, sans-serif';
     context.fillText('السؤال', 0.75 * width, headerY);
     layout.questions.forEach((question, index) => {
-      const y = question.y * height;
+      const y = question.y * PAGE_H;
       context.fillStyle = '#172a23';
       context.font = 'bold 42px Tahoma, Arial, sans-serif';
       context.fillText(arabicNumber.format(index + 1), question.questionX * width, y);
@@ -959,14 +1049,10 @@ function drawAnswerSheet(canvas, scale = 1) {
     });
   } else {
     const { top, headerH, rowH, qw, cellW, drawRadius, optionCount } = layout;
-    const left = Math.min(...layout.cols.map(col => col.left)) - 28;
-    const right = Math.max(...layout.cols.map(col => col.right)) + 28;
-    // اجعل الحد السفلي قريبًا من آخر دائرة فعلية بدل ترك مساحة زائدة أسفل العمودين.
-    const lastQuestionY = Math.max(...layout.questions.map(question => question.y * height));
-    const bottom = Math.min(height - 72, lastQuestionY + drawRadius + 18);
+    const { left, right, bottom } = layout.frame;
     context.strokeStyle = '#293b34';
     context.lineWidth = 2.5;
-    context.strokeRect(left, 48, right - left, Math.min(height - 96, bottom - 48));
+    context.strokeRect(left, 48, right - left, bottom - 48);
     layout.cols.forEach(col => {
       context.fillStyle = '#eaf0eb';
       context.fillRect(col.left, top, col.right - col.left, headerH);
@@ -982,7 +1068,7 @@ function drawAnswerSheet(canvas, scale = 1) {
     context.lineWidth = Math.max(1.8, Math.min(4, drawRadius / 5.5));
     context.strokeStyle = '#172a23';
     layout.questions.forEach(question => {
-      const y = question.y * height;
+      const y = question.y * PAGE_H;
       context.font = 'bold 42px Tahoma, Arial, sans-serif';
       context.fillText(arabicNumber.format(question.question + 1), question.questionX * width, y);
       question.xs.forEach((cx, option) => {
@@ -1000,7 +1086,8 @@ function drawAnswerSheet(canvas, scale = 1) {
   context.fillStyle = '#000';
   const markerSize = 36;
   for (const [xRatio, yRatio] of [[0.026, 0.018], [0.974, 0.018], [0.026, 0.982], [0.974, 0.982]]) {
-    context.fillRect(xRatio * width - markerSize / 2, yRatio * height - markerSize / 2, markerSize, markerSize);
+    const markerY = yRatio < 0.5 ? yRatio * PAGE_H : yRatio * height;
+    context.fillRect(xRatio * width - markerSize / 2, markerY - markerSize / 2, markerSize, markerSize);
   }
 }
 
@@ -1016,11 +1103,14 @@ function updateBuilderFormat() {
     questionCount,
     columns: Number(columnCountInput.value),
     optionCount: Number(optionCountInput.value),
+    dynamic: true,
+    code: formFormat.code,
   };
-  const changed = Object.keys(nextFormat).some(key => nextFormat[key] !== formFormat[key]);
+  const changed = ['questionCount', 'columns', 'optionCount'].some(key => nextFormat[key] !== formFormat[key]);
   if (changed) {
     const oldKey = [...answerKey];
     stopCamera();
+    nextFormat.code = createUniqueDesignCode();
     formFormat = nextFormat;
     answerKey.splice(0, answerKey.length, ...Array.from({ length: nextFormat.questionCount }, (_, i) => oldKey[i] != null && oldKey[i] < nextFormat.optionCount ? oldKey[i] : null));
     renderKey();
@@ -1056,10 +1146,70 @@ async function downloadAnswerSheet() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `answer-sheet-${formFormat.questionCount}q-${formFormat.columns}col-${formFormat.optionCount}opt.png`;
+  link.download = `${formFormat.code}.png`;
   link.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   showToast('تم تنزيل ورقة الإجابة كصورة PNG.');
+}
+
+async function exportTemplateFile() {
+  const output = document.createElement('canvas');
+  drawAnswerSheet(output, 2);
+  const imageData = output.toDataURL('image/png');
+  const template = loadAnswerTemplate();
+  const packageData = {
+    type: 'sahih-answer-template',
+    version: 1,
+    code: formFormat.code,
+    format: { ...formFormat },
+    answerKey: [...answerKey],
+    template,
+    image: { mime: 'image/png', data: imageData },
+    createdAt: new Date().toISOString(),
+  };
+  const blob = new Blob([JSON.stringify(packageData)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${formFormat.code}.sahih`;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast(`تم تصدير ملف التصحيح ${formFormat.code}.sahih`);
+}
+
+async function importTemplateFile(event) {
+  const file = event.target.files?.[0];
+  event.target.value = '';
+  if (!file) return;
+  try {
+    const packageData = JSON.parse(await file.text());
+    const format = packageData?.format;
+    const template = packageData?.template;
+    const code = String(packageData?.code || format?.code || template?.code || '');
+    if (packageData?.type !== 'sahih-answer-template' || packageData.version !== 1 || !template || !/^\d{8}$/.test(code)) {
+      throw new Error('ملف التصحيح غير صالح أو ناقص.');
+    }
+    const questionCount = Math.max(1, Math.min(100, Math.round(Number(format.questionCount))));
+    const columns = Math.max(1, Math.min(4, Math.round(Number(format.columns))));
+    const optionCount = Math.max(2, Math.min(6, Math.round(Number(format.optionCount))));
+    stopCamera();
+    formFormat = { questionCount, columns, optionCount, dynamic: true, code };
+    questionCountInput.value = String(questionCount);
+    columnCountInput.value = String(columns);
+    optionCountInput.value = String(optionCount);
+    answerKey.splice(0, answerKey.length, ...Array.from({ length: questionCount }, (_, index) => {
+      const value = packageData.answerKey?.[index];
+      return Number.isInteger(value) && value >= 0 && value < optionCount ? value : null;
+    }));
+    localStorage.setItem('sahih-answer-template', JSON.stringify(template));
+    renderKey();
+    drawAnswerSheet(formPreview);
+    builderHint.textContent = `تم استيراد التصميم ${code} واستخدام إحداثياته في التصحيح.`;
+    builderHint.classList.remove('is-warning');
+    showToast(`تم استيراد التصميم ${code} بنجاح.`);
+  } catch (error) {
+    showToast(error?.message || 'تعذر استيراد ملف التصحيح.');
+  }
 }
 
 function showMessage(text, kind = 'info') {
@@ -1274,7 +1424,7 @@ async function processSource(source) {
     showMessage('أكمل نموذج الإجابة أولًا، ثم التقط الورقة من جديد.', 'error');
     return;
   }
-  const scanFormat = { ...formFormat };
+  const scanFormat = { ...formFormat, savedTemplate: loadAnswerTemplate() };
   const scanAnswerKey = [...answerKey];
   setBusy(true);
   showMessage('نحلّل الصورة داخل جهازك ونبحث عن العلامات…', 'info');
@@ -1458,6 +1608,8 @@ questionCountInput.addEventListener('input', updateBuilderFormat);
 columnCountInput.addEventListener('change', updateBuilderFormat);
 optionCountInput.addEventListener('change', updateBuilderFormat);
 downloadFormButton.addEventListener('click', downloadAnswerSheet);
+exportTemplateButton.addEventListener('click', exportTemplateFile);
+templateInput.addEventListener('change', importTemplateFile);
 captureNow.addEventListener('click', () => {
   clearTimeout(cameraTimer);
   autoTriggered = true;
