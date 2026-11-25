@@ -295,15 +295,14 @@ h1 em { color: var(--green); font-style: normal; }
         <div id="scanMessage" class="scan-message" role="status" aria-live="polite" hidden></div>
         <div class="scan-actions">
           <button id="cameraButton" class="button button-primary" type="button" disabled>
-            <span class="button-icon" aria-hidden="true">▣</span> التقط صورة بالكاميرا
+            <span class="button-icon" aria-hidden="true">▣</span> افتح الكاميرا
           </button>
           <label id="fileButton" class="button button-secondary is-disabled" aria-disabled="true">
             <span class="button-icon upload-icon" aria-hidden="true">↑</span> اختر صورًا
             <input id="imageInput" type="file" accept="image/*" multiple disabled aria-label="اختيار صور أوراق الإجابة" />
           </label>
-          <input id="nativeCameraInput" type="file" accept="image/*" capture="environment" hidden aria-label="التقاط صورة بالكاميرا الخلفية" />
         </div>
-        <p class="scan-footnote">زر التصوير يفتح واجهة كاميرا الهاتف لالتقاط صورة عادية. يدعم رفع صور JPG وPNG وHEIC حسب المتصفح، ويمكن تصحيح أكثر من ورقة في الجلسة نفسها.</p>
+        <p class="scan-footnote">صوّر الورقة من الأعلى مع ظهور العلامات الأربع. يدعم رفع صور JPG وPNG وHEIC حسب المتصفح، ويمكن تصحيح أكثر من ورقة في الجلسة نفسها.</p>
       </section>
 
       <section id="resultsSection" class="results-section" aria-labelledby="results-title" hidden>
@@ -1220,10 +1219,21 @@ function drawCameraOverlay(detection, probeWidth, probeHeight) {
 
 function captureFromCamera() {
   if (!activeStream || !cameraVideo.videoWidth) return;
+  const sourceWidth = cameraVideo.videoWidth;
+  const sourceHeight = cameraVideo.videoHeight;
+  const rotateForPortrait = cameraStage.classList.contains('is-rotated');
   const canvas = document.createElement('canvas');
-  canvas.width = cameraVideo.videoWidth;
-  canvas.height = cameraVideo.videoHeight;
-  canvas.getContext('2d').drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
+  canvas.width = rotateForPortrait ? sourceHeight : sourceWidth;
+  canvas.height = rotateForPortrait ? sourceWidth : sourceHeight;
+  const context = canvas.getContext('2d');
+  if (rotateForPortrait) {
+    // Rotate the captured pixels exactly as the live preview is rotated.
+    context.translate(canvas.width / 2, canvas.height / 2);
+    context.rotate(Math.PI / 2);
+    context.drawImage(cameraVideo, -sourceWidth / 2, -sourceHeight / 2, sourceWidth, sourceHeight);
+  } else {
+    context.drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
+  }
   stopCamera();
   processSource(canvas);
 }
@@ -1413,13 +1423,7 @@ resultsList.addEventListener('change', event => {
   resultsList.querySelector(`.answer-select[data-result-id="${result.id}"][data-question="${question}"]`)?.focus();
 });
 
-const nativeCameraInput = document.getElementById('nativeCameraInput');
-cameraButton.addEventListener('click', () => nativeCameraInput.click());
-nativeCameraInput.addEventListener('change', event => {
-  const photo = event.target.files?.[0];
-  event.target.value = '';
-  if (photo) processSource(photo);
-});
+cameraButton.addEventListener('click', toggleCamera);
 questionCountInput.addEventListener('input', updateBuilderFormat);
 columnCountInput.addEventListener('change', updateBuilderFormat);
 optionCountInput.addEventListener('change', updateBuilderFormat);
