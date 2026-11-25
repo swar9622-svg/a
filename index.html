@@ -1155,8 +1155,11 @@ function checkLiveFrame() {
 }
 
 function syncCameraOrientation() {
-  // The 9:16 stage changes display size only; never rotate the camera feed to match it.
-  cameraStage.classList.remove('is-rotated');
+  if (!cameraVideo.videoWidth || !cameraStage.clientWidth) return;
+  const sourceIsPortrait = cameraVideo.videoHeight > cameraVideo.videoWidth;
+  const stageIsPortrait = cameraStage.clientHeight > cameraStage.clientWidth;
+  // This flag affects only the live preview canvas and its guide; capture keeps raw camera pixels.
+  cameraStage.classList.toggle('is-rotated', sourceIsPortrait !== stageIsPortrait);
 }
 
 function renderCameraPreview() {
