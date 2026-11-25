@@ -961,7 +961,9 @@ function drawAnswerSheet(canvas, scale = 1) {
     const { top, headerH, rowH, qw, cellW, drawRadius, optionCount } = layout;
     const left = Math.min(...layout.cols.map(col => col.left)) - 28;
     const right = Math.max(...layout.cols.map(col => col.right)) + 28;
-    const bottom = top + headerH + layout.rowsMax * rowH + 24;
+    // اجعل الحد السفلي قريبًا من آخر دائرة فعلية بدل ترك مساحة زائدة أسفل العمودين.
+    const lastQuestionY = Math.max(...layout.questions.map(question => question.y * height));
+    const bottom = Math.min(height - 72, lastQuestionY + drawRadius + 18);
     context.strokeStyle = '#293b34';
     context.lineWidth = 2.5;
     context.strokeRect(left, 48, right - left, Math.min(height - 96, bottom - 48));
@@ -981,7 +983,7 @@ function drawAnswerSheet(canvas, scale = 1) {
     context.strokeStyle = '#172a23';
     layout.questions.forEach(question => {
       const y = question.y * height;
-      context.font = `bold ${question.question === 0 ? Math.round(Math.min(42, rowH * 0.72)) : Math.round(Math.min(27, rowH * 0.42))}px Tahoma, Arial, sans-serif`;
+      context.font = 'bold 42px Tahoma, Arial, sans-serif';
       context.fillText(arabicNumber.format(question.question + 1), question.questionX * width, y);
       question.xs.forEach((cx, option) => {
         context.beginPath();
