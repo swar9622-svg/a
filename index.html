@@ -1,0 +1,1488 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f5f6f3" />
+  <meta name="description" content="قارئ كروت إجابة عربي — تصحيح محلي من دون رفع الصور أو حفظ النتائج." />
+  <title>صحّح — قارئ كروت الإجابة</title>
+  <style>
+:root {
+  color-scheme: light;
+  --paper: #f5f6f3;
+  --surface: #ffffff;
+  --surface-soft: #edf1ec;
+  --ink: #202a27;
+  --muted: #6d7872;
+  --line: #e3e8e1;
+  --green: #117463;
+  --green-dark: #0b5d50;
+  --green-wash: #e5f2ed;
+  --amber: #a56716;
+  --amber-wash: #fbf0d9;
+  --red: #a8473c;
+  --red-wash: #f9eae6;
+  --radius: 22px;
+  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; background: var(--paper); color: var(--ink); }
+button, input { font: inherit; }
+button { color: inherit; }
+.shell { width: min(100% - 40px, 1050px); margin-inline: auto; }
+.topbar { height: 74px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-size: 22px; font-weight: 850; }
+.brand-dot { color: var(--green); }
+.brand-mark, .howto-mark { display: grid; grid-template-columns: repeat(2, 7px); grid-template-rows: repeat(2, 7px); gap: 3px; padding: 5px; border: 1.5px solid var(--green); border-radius: 5px; transform: rotate(-8deg); }
+.brand-mark i { width: 7px; height: 7px; background: var(--green); border-radius: 1px; }
+.brand-mark i:nth-child(2), .brand-mark i:nth-child(3) { background: transparent; border: 1.3px solid var(--green); }
+.privacy-chip { color: var(--muted); font-size: 12px; font-weight: 650; display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; }
+.privacy-dot, .live-dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: #27a581; box-shadow: 0 0 0 3px #27a58120; }
+main { padding-bottom: 30px; }
+.intro { padding: 58px 2px 31px; max-width: 670px; }
+.eyebrow { display: flex; align-items: center; gap: 9px; color: var(--green); font-size: 12px; font-weight: 780; }
+.eyebrow-line { width: 19px; height: 2px; background: var(--green); border-radius: 2px; }
+h1 { margin: 14px 0 12px; font-size: clamp(38px, 6vw, 60px); line-height: 1.19; font-weight: 830; }
+h1 em { color: var(--green); font-style: normal; }
+.intro > p { max-width: 560px; margin: 0; color: var(--muted); font-size: 16px; line-height: 1.9; }
+.privacy-note { display: flex; gap: 10px; align-items: flex-start; margin-top: 19px; padding: 12px 15px; width: fit-content; max-width: 100%; color: #426057; background: var(--green-wash); border-radius: 11px; font-size: 12px; line-height: 1.8; }
+.privacy-note strong { color: var(--green-dark); }
+.lock-icon { color: var(--green); font-size: 10px; padding-top: 3px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px 28px; margin-top: 18px; box-shadow: 0 5px 20px #20372e08; }
+.panel-heading { display: flex; align-items: center; gap: 13px; margin-bottom: 20px; }
+.step-number { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; color: var(--green); background: var(--green-wash); border-radius: 11px; font-weight: 800; font-size: 15px; }
+.heading-copy { flex: 1; }
+.heading-copy h2, .results-heading h2 { margin: 0; font-size: 18px; font-weight: 780; }
+.heading-copy p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.key-progress { color: var(--muted); font-size: 13px; white-space: nowrap; }
+.key-progress strong { color: var(--green); font-size: 20px; }
+.key-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
+.key-item { min-width: 0; display: flex; align-items: center; gap: 8px; padding: 8px 9px; border: 1px solid var(--line); border-radius: 12px; transition: border-color .18s, background .18s; }
+.key-item.is-set { background: #f7fbf8; border-color: #d2e7dc; }
+.question-number { width: 25px; height: 25px; flex: 0 0 25px; display: grid; place-items: center; color: #76827c; background: var(--surface-soft); border-radius: 8px; font-size: 11px; font-weight: 750; }
+.option-set { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 3px; flex: 1; }
+.option-choice { flex: 1 1 0; max-width: 32px; min-width: 0; height: 29px; padding: 0; display: grid; place-items: center; border: 1px solid transparent; border-radius: 9px; background: transparent; color: #6c7771; cursor: pointer; font-size: 12px; font-weight: 700; transition: .16s ease; -webkit-tap-highlight-color: transparent; }
+.option-choice:hover { background: var(--surface-soft); }
+.option-choice[aria-checked="true"] { color: #fff; background: var(--green); border-color: var(--green); box-shadow: 0 2px 6px #11746335; }
+.key-footer { min-height: 32px; display: flex; align-items: end; justify-content: space-between; gap: 10px; margin-top: 14px; }
+.key-hint { color: var(--muted); font-size: 11px; }
+.key-hint.is-complete { color: var(--green); }
+.text-button { border: 0; padding: 5px 0; color: var(--muted); background: none; font-size: 12px; cursor: pointer; }
+.text-button:hover { color: var(--green); }
+.scan-panel { padding-bottom: 22px; }
+.key-gate { display: flex; align-items: center; gap: 11px; padding: 13px 15px; color: #66726b; background: #f4f6f3; border: 1px dashed #d8dfd8; border-radius: 12px; font-size: 12px; }
+.gate-icon { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 8px; color: #718079; background: #e8ede8; font-size: 17px; }
+.scan-actions { display: grid; grid-template-columns: 1.15fr .85fr; gap: 10px; margin-top: 4px; }
+.button { position: relative; min-height: 49px; padding: 0 17px; border: 1px solid transparent; border-radius: 13px; display: inline-flex; justify-content: center; align-items: center; gap: 9px; cursor: pointer; font-weight: 730; font-size: 13px; transition: transform .15s, background .15s, border-color .15s; -webkit-tap-highlight-color: transparent; }
+.button:not(:disabled):hover { transform: translateY(-1px); }
+.button-primary { color: #fff; background: var(--green); box-shadow: 0 4px 10px #11746320; }
+.button-primary:not(:disabled):hover { background: var(--green-dark); }
+.button-primary:disabled { color: #9ca7a0; background: #e3e8e3; box-shadow: none; cursor: not-allowed; }
+.button-secondary { color: var(--ink); background: var(--surface); border-color: var(--line); }
+.button-secondary:not(.is-disabled):hover { border-color: #b9d3c6; background: #f7fbf8; }
+.button-secondary.is-disabled { color: #a0aaa3; cursor: not-allowed; }
+.button-icon { font-size: 16px; font-weight: 600; }
+.upload-icon { font-size: 20px; line-height: 1; }
+#imageInput { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.scan-footnote { margin: 12px 2px 0; color: #8b958f; font-size: 10px; line-height: 1.7; }
+.camera-stage { position: relative; overflow: hidden; width: min(100%, 430px, calc(76svh * 0.5625)); aspect-ratio: 9 / 16; background: #15201d; border-radius: 16px; margin: 0 auto 14px; min-height: 0; }
+.camera-stage video { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; opacity: 0; pointer-events: none; }
+.camera-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.camera-stage .camera-feed { z-index: 1; }
+.camera-stage .camera-overlay { z-index: 2; }
+.camera-badge, .capture-button { z-index: 3; }
+.camera-badge { position: absolute; top: 12px; right: 12px; max-width: calc(100% - 24px); display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; color: #fff; background: #101a17c9; border: 1px solid #ffffff24; border-radius: 999px; font-size: 11px; backdrop-filter: blur(10px); }
+.camera-badge.has-markers .live-dot { background: #8fe0b3; box-shadow: 0 0 0 3px #8fe0b330; }
+.capture-button { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); width: 56px; height: 56px; display: grid; place-items: center; border: 3px solid #fff; border-radius: 50%; background: #ffffff3a; cursor: pointer; box-shadow: 0 2px 12px #0005; }
+.capture-button span { width: 40px; height: 40px; border-radius: 50%; background: #fff; }
+.capture-button:active { transform: translateX(-50%) scale(.93); }
+.scan-message { margin: 0 0 12px; padding: 11px 13px; border-radius: 11px; font-size: 12px; line-height: 1.65; }
+.scan-message.error { color: var(--red); background: var(--red-wash); }
+.scan-message.success { color: var(--green-dark); background: var(--green-wash); }
+.scan-message.info { color: #596d68; background: #edf2f0; }
+.results-section { padding-top: 38px; }
+.results-heading { display: flex; align-items: end; justify-content: space-between; margin-bottom: 15px; }
+.results-heading h2 { margin-top: 5px; font-size: 24px; }
+.results-list { display: grid; gap: 13px; }
+.result-card { overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: 19px; box-shadow: 0 5px 20px #20372e08; }
+.result-top { display: flex; gap: 17px; align-items: center; padding: 19px 20px 15px; }
+.score-wrap { position: relative; width: 88px; height: 88px; flex: 0 0 88px; display: grid; place-content: center; text-align: center; border-radius: 50%; background: conic-gradient(var(--green) var(--score-angle), #edf1ed 0); }
+.score-wrap::before { position: absolute; inset: 6px; content: ""; background: var(--surface); border-radius: inherit; }
+.score-main, .score-denom { position: relative; z-index: 1; line-height: 1.15; }
+.score-main { color: var(--green-dark); font-size: 25px; font-weight: 820; }
+.score-denom { color: var(--muted); font-size: 10px; }
+.result-copy { min-width: 0; flex: 1; }
+.result-copy h3 { margin: 0 0 5px; font-size: 15px; font-weight: 760; }
+.result-copy p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.result-tag { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 5px 8px; color: var(--green-dark); background: var(--green-wash); border-radius: 7px; font-size: 10px; font-weight: 700; }
+.result-tag.needs-review { color: var(--amber); background: var(--amber-wash); }
+.result-stats { display: grid; grid-template-columns: repeat(4,1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.stat { padding: 11px 4px; text-align: center; border-left: 1px solid var(--line); }
+.stat:last-child { border-left: 0; }
+.stat strong { display: block; font-size: 16px; font-weight: 800; }
+.stat span { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+.stat.is-correct strong { color: var(--green); }
+.stat.is-wrong strong { color: var(--red); }
+.stat.is-review strong { color: var(--amber); }
+.result-body { display: grid; grid-template-columns: 124px minmax(0,1fr); gap: 15px; padding: 15px 18px 18px; }
+.result-preview { width: 124px; height: 160px; object-fit: cover; object-position: center; background: #f5f6f3; border: 1px solid var(--line); border-radius: 9px; }
+.answer-review { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; align-content: start; }
+.answer-cell { min-width: 0; display: flex; align-items: center; gap: 5px; padding: 6px 5px; border-radius: 8px; background: #f7f8f6; border: 1px solid #eef0ed; }
+.answer-cell.needs-review { background: #fffaf0; border-color: #f2dfb9; }
+.answer-cell.is-right { background: #f0f8f3; border-color: #d9ebdf; }
+.answer-cell.is-wrong { background: #fff5f2; border-color: #f3ded8; }
+.answer-cell.is-blank { color: #89928c; }
+.answer-q { width: 15px; flex: 0 0 15px; color: var(--muted); font-size: 9px; text-align: center; }
+.answer-letter { flex: 1; color: var(--ink); font-size: 10px; font-weight: 750; text-align: center; }
+.answer-cell.is-right .answer-letter { color: var(--green); }
+.answer-cell.is-wrong .answer-letter { color: var(--red); }
+.answer-select { min-width: 38px; max-width: 48px; height: 25px; padding: 0 3px; border: 1px solid #dfe5de; border-radius: 6px; color: var(--ink); background: #fff; font-size: 10px; text-align: center; }
+.answer-select:focus { outline: 2px solid #8cc4ad; outline-offset: 1px; }
+.review-note { grid-column: 1 / -1; margin: 0; padding: 9px 10px; border-radius: 8px; color: #88601d; background: var(--amber-wash); font-size: 10px; line-height: 1.6; }
+.result-actions { display: flex; justify-content: flex-end; padding: 0 18px 14px; }
+.remove-result { padding: 4px 2px; border: 0; color: #89928c; background: transparent; font-size: 10px; cursor: pointer; }
+.remove-result:hover { color: var(--red); }
+.howto { display: flex; align-items: flex-start; gap: 13px; margin-top: 27px; padding: 16px 17px; border: 1px solid #e0e8e0; border-radius: 15px; background: #eef3ed; }
+.howto-mark { flex: 0 0 auto; grid-template-columns: repeat(2,5px); grid-template-rows: repeat(2,5px); gap: 2px; padding: 4px; margin-top: 1px; }
+.howto-mark span { width: 5px; height: 5px; background: var(--green); border-radius: 1px; }
+.howto-mark span:nth-child(2), .howto-mark span:nth-child(3) { background: transparent; border: 1px solid var(--green); }
+.howto h2 { margin: 0 0 4px; font-size: 12px; }
+.howto p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.8; }
+.footer { display: flex; align-items: center; gap: 8px; padding: 20px 0 calc(20px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); color: #7a857e; font-size: 10px; }
+.footer > span:first-child { color: var(--green); font-weight: 800; }
+.footer-separator { color: #c0c9c1; }
+.toast { position: fixed; z-index: 20; bottom: calc(18px + env(safe-area-inset-bottom)); left: 50%; width: max-content; max-width: calc(100% - 32px); padding: 11px 16px; color: #fff; background: #202a27; border-radius: 11px; box-shadow: 0 10px 30px #0003; font-size: 12px; opacity: 0; pointer-events: none; transform: translate(-50%, 12px); transition: opacity .2s, transform .2s; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+[hidden] { display: none !important; }
+@media (min-width: 760px) {
+  .shell { width: min(100% - 64px, 950px); }
+  .intro { padding-top: 67px; }
+  .key-grid { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
+  .key-item { padding: 8px 10px; }
+  .result-body { grid-template-columns: 145px minmax(0,1fr); }
+  .result-preview { width: 145px; height: 185px; }
+  .answer-review { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; }
+  .answer-cell { padding: 7px 6px; }
+}
+@media (max-width: 480px) {
+  .shell { width: min(100% - 28px, 1050px); }
+  .topbar { height: 63px; }
+  .brand { font-size: 20px; }
+  .privacy-chip { font-size: 10px; padding: 8px 10px; }
+  .intro { padding: 38px 1px 22px; }
+  h1 { font-size: 41px; }
+  .intro > p { font-size: 14px; }
+  .panel { padding: 20px 15px; border-radius: 18px; margin-top: 13px; }
+  .panel-heading { margin-bottom: 16px; }
+  .key-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
+  .key-item { padding: 6px; gap: 5px; }
+  .question-number { width: 23px; height: 23px; flex-basis: 23px; }
+  .option-choice { height: 27px; font-size: 11px; }
+  .scan-actions { gap: 8px; }
+  .button { padding-inline: 9px; font-size: 12px; }
+  .result-top { padding: 16px 15px 13px; gap: 12px; }
+  .score-wrap { width: 77px; height: 77px; flex-basis: 77px; }
+  .score-main { font-size: 22px; }
+  .result-body { grid-template-columns: 88px minmax(0,1fr); gap: 9px; padding: 12px 11px 13px; }
+  .result-preview { width: 88px; height: 132px; }
+  .answer-review { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; }
+  .answer-cell { gap: 3px; padding: 5px 3px; }
+  .answer-select { min-width: 35px; }
+  .result-actions { padding-inline: 11px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+.form-builder-controls { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin-bottom: 16px; }
+.builder-field { min-width: 0; display: grid; gap: 6px; color: var(--muted); font-size: 11px; font-weight: 680; }
+.builder-field input, .builder-field select { width: 100%; min-height: 42px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: #fff; font-size: 13px; }
+.builder-field :focus { outline: 2px solid #8cc4ad; outline-offset: 1px; }
+.builder-note { margin: -5px 0 14px; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.sheet-preview-wrap { display: flex; justify-content: center; padding: 11px; background: #f3f5f2; border: 1px solid var(--line); border-radius: 13px; }
+#formPreview { display: block; width: min(100%, 440px); height: auto; background: #fff; box-shadow: 0 3px 15px #14231d1b; }
+.builder-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
+.builder-hint { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.builder-hint.is-warning { color: var(--amber); }
+@media (max-width: 520px) {
+  .form-builder-controls { gap: 7px; }
+  .builder-field { font-size: 10px; }
+  .builder-field input, .builder-field select { padding-inline: 6px; font-size: 12px; }
+  .builder-footer { align-items: stretch; flex-direction: column; }
+  .builder-footer .button { width: 100%; }
+}
+
+.key-grid[data-options="5"], .key-grid[data-options="6"] { grid-template-columns: 1fr; }
+@media (min-width: 760px) { .key-grid[data-options="5"], .key-grid[data-options="6"] { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="صحّح، الصفحة الرئيسية">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span>صحّح<span class="brand-dot">.</span></span>
+      </a>
+      <div class="privacy-chip"><span class="privacy-dot"></span> خصوصيتك أولًا</div>
+    </header>
+
+    <main id="top">
+      <section class="intro" aria-labelledby="page-title">
+        <div class="eyebrow"><span class="eyebrow-line"></span> قارئ كروت الإجابة</div>
+        <h1 id="page-title">الورقة تدخل.<br /><em>الدرجة تطلع.</em></h1>
+        <p>حدّد الإجابات الصحيحة، ثم صوّر الكرت. سنتعرّف على العلامات السوداء ونصحّح الورقة تلقائيًا.</p>
+        <div class="privacy-note"><span class="lock-icon" aria-hidden="true">●</span><span><strong>كل شيء يبقى على جهازك.</strong> لا رفع للصور، لا حسابات، ولا حفظ بعد إغلاق الصفحة.</span></div>
+      </section>
+
+      <section class="panel form-builder-panel" aria-labelledby="form-builder-title">
+        <div class="panel-heading">
+          <div class="step-number">١</div>
+          <div class="heading-copy">
+            <h2 id="form-builder-title">إنشاء نموذج إجابة</h2>
+            <p>اختر عدد الأسئلة والأعمدة والخيارات، ثم نزّل الورقة للطباعة.</p>
+          </div>
+        </div>
+        <div class="form-builder-controls">
+          <label class="builder-field" for="questionCount"><span>عدد الأسئلة</span><input id="questionCount" type="number" min="1" max="100" step="1" value="12" inputmode="numeric" /></label>
+          <label class="builder-field" for="columnCount"><span>عدد الأعمدة</span><select id="columnCount"><option value="1">عمود واحد</option><option value="2" selected>عمودان</option><option value="3">٣ أعمدة</option><option value="4">٤ أعمدة</option></select></label>
+          <label class="builder-field" for="optionCount"><span>الخيارات لكل سؤال</span><select id="optionCount"><option value="2">خياران</option><option value="3">٣ خيارات</option><option value="4" selected>٤ خيارات</option><option value="5">٥ خيارات</option><option value="6">٦ خيارات</option></select></label>
+        </div>
+        <p class="builder-note">قبل التصحيح، اختر نفس الأعداد المطبوعة على الورقة. لا تُحفظ الإعدادات بعد إغلاق التطبيق.</p>
+        <div class="sheet-preview-wrap">
+          <canvas id="formPreview" width="900" height="1273" aria-label="معاينة ورقة الإجابة القابلة للطباعة"></canvas>
+        </div>
+        <div class="builder-footer">
+          <p id="builderHint" class="builder-hint">إعداداتك الحالية تطابق مفتاح الإجابة أدناه.</p>
+          <button id="downloadForm" class="button button-primary" type="button"><span class="button-icon" aria-hidden="true">↓</span> تنزيل الورقة PNG</button>
+        </div>
+      </section>
+
+      <section class="panel key-panel" aria-labelledby="key-title">
+        <div class="panel-heading">
+          <div class="step-number">٢</div>
+          <div class="heading-copy">
+            <h2 id="key-title">نموذج الإجابة</h2>
+            <p>اختر الإجابة الصحيحة لكل سؤال.</p>
+          </div>
+          <div class="key-progress"><strong id="keyProgress">٠</strong><span> / ١٢</span></div>
+        </div>
+        <div id="answerKey" class="key-grid" role="group" aria-label="مفتاح الإجابة، 12 سؤالًا"></div>
+        <div class="key-footer">
+          <span id="keyHint" class="key-hint">أكمل المفتاح لتفعيل التصحيح.</span>
+          <button id="clearKey" class="text-button" type="button">مسح المفتاح</button>
+        </div>
+      </section>
+
+      <section class="panel scan-panel" aria-labelledby="scan-title">
+        <div class="panel-heading">
+          <div class="step-number">٣</div>
+          <div class="heading-copy">
+            <h2 id="scan-title">صوّر كرت الإجابة</h2>
+            <p>صوّر الورقة كاملة من الأعلى، مع ظهور العلامات السوداء الأربع عند الزوايا.</p>
+          </div>
+        </div>
+
+        <div id="keyGate" class="key-gate">
+          <span class="gate-icon" aria-hidden="true">↟</span>
+          <span>أدخل نموذج الإجابة أولًا لبدء التصحيح.</span>
+        </div>
+
+        <div id="cameraStage" class="camera-stage" hidden>
+          <video id="cameraVideo" autoplay muted playsinline aria-label="معاينة كاميرا تصوير ورقة الإجابة"></video>
+          <canvas id="cameraFeed" aria-hidden="true"></canvas>
+          <canvas id="cameraOverlay" class="camera-overlay" aria-hidden="true"></canvas>
+          <div id="cameraBadge" class="camera-badge"><span class="live-dot"></span><span id="cameraStatus">ابحث عن العلامات السوداء…</span></div>
+          <button id="captureNow" class="capture-button" type="button" aria-label="التقاط الصورة الآن"><span></span></button>
+        </div>
+
+        <div id="scanMessage" class="scan-message" role="status" aria-live="polite" hidden></div>
+        <div class="scan-actions">
+          <button id="cameraButton" class="button button-primary" type="button" disabled>
+            <span class="button-icon" aria-hidden="true">▣</span> افتح الكاميرا
+          </button>
+          <label id="fileButton" class="button button-secondary is-disabled" aria-disabled="true">
+            <span class="button-icon upload-icon" aria-hidden="true">↑</span> اختر صورًا
+            <input id="imageInput" type="file" accept="image/*" multiple disabled aria-label="اختيار صور أوراق الإجابة" />
+          </label>
+        </div>
+        <p class="scan-footnote">صوّر الورقة من الأعلى مع ظهور العلامات الأربع. يدعم رفع صور JPG وPNG وHEIC حسب المتصفح، ويمكن تصحيح أكثر من ورقة في الجلسة نفسها.</p>
+      </section>
+
+      <section id="resultsSection" class="results-section" aria-labelledby="results-title" hidden>
+        <div class="results-heading">
+          <div>
+            <div class="eyebrow"><span class="eyebrow-line"></span> نتائج هذه الجلسة</div>
+            <h2 id="results-title">الدرجات</h2>
+          </div>
+          <button id="clearResults" class="text-button" type="button">مسح النتائج</button>
+        </div>
+        <div id="resultsList" class="results-list"></div>
+      </section>
+
+      <section class="howto" aria-labelledby="howto-title">
+        <div class="howto-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        <div>
+          <h2 id="howto-title">لأفضل نتيجة</h2>
+          <p>صوّر الورقة من الأعلى، بإضاءة جيدة، وضعها كاملة داخل الصورة. تأكد من ظهور العلامات السوداء الأربع حول الحواف.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer"><span>صحّح</span><span class="footer-separator">·</span><span>تصحيح محلي، بلا أثر.</span></footer>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script>
+const ANSWERS = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
+const PAGE_W = 900;
+const PAGE_H = Math.round(PAGE_W * 1273 / 900);
+const OPTION_X = [0.5856, 0.4604, 0.3369, 0.2126];
+const ROW_Y = [0.1984, 0.2606, 0.3224, 0.3846, 0.4468, 0.5096, 0.5718, 0.6346, 0.6968, 0.7596, 0.8218, 0.8817];
+const GRID_X = [0.150, 0.274, 0.398, 0.523, 0.646, 0.857];
+const GRID_Y = [0.104, 0.167, 0.229, 0.291, 0.353, 0.415, 0.477, 0.539, 0.601, 0.664, 0.726, 0.788, 0.850, 0.913];
+const MARK_TARGETS = {
+  tl: [PAGE_W * 0.026, PAGE_H * 0.018],
+  tr: [PAGE_W * 0.974, PAGE_H * 0.018],
+  bl: [PAGE_W * 0.026, PAGE_H * 0.982],
+  br: [PAGE_W * 0.974, PAGE_H * 0.982],
+};
+
+function detectFiducials(imageData, width, height) {
+  let first;
+  for (const limit of [105, 85, 130, 155]) {
+    const found = detectFiducialsAt(imageData, width, height, limit);
+    if (found.ok) return found;
+    first = first || found;
+  }
+  return first;
+}
+
+function detectFiducialsAt(imageData, width, height, darkLimit) {
+  const length = width * height;
+  if (length < 100) return { ok: false, reason: 'الصورة صغيرة جدًا.' };
+  const rgba = imageData.data;
+  const foreground = new Uint8Array(length);
+  for (let i = 0, p = 0; i < length; i++, p += 4) {
+    foreground[i] = (rgba[p] * 0.299 + rgba[p + 1] * 0.587 + rgba[p + 2] * 0.114) < darkLimit ? 1 : 0;
+  }
+  const visited = new Uint8Array(length);
+  const queue = new Int32Array(length);
+  const candidates = [];
+
+  for (let start = 0; start < length; start++) {
+    if (!foreground[start] || visited[start]) continue;
+    let head = 0;
+    let tail = 0;
+    queue[tail++] = start;
+    visited[start] = 1;
+    let minX = width, minY = height, maxX = 0, maxY = 0;
+    while (head < tail) {
+      const index = queue[head++];
+      const x = index % width;
+      const y = (index / width) | 0;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+      const left = x > 0 ? index - 1 : -1;
+      const right = x + 1 < width ? index + 1 : -1;
+      const up = y > 0 ? index - width : -1;
+      const down = y + 1 < height ? index + width : -1;
+      if (left >= 0 && foreground[left] && !visited[left]) { visited[left] = 1; queue[tail++] = left; }
+      if (right >= 0 && foreground[right] && !visited[right]) { visited[right] = 1; queue[tail++] = right; }
+      if (up >= 0 && foreground[up] && !visited[up]) { visited[up] = 1; queue[tail++] = up; }
+      if (down >= 0 && foreground[down] && !visited[down]) { visited[down] = 1; queue[tail++] = down; }
+    }
+    const boxW = maxX - minX + 1;
+    const boxH = maxY - minY + 1;
+    const density = tail / (boxW * boxH);
+    const ratio = boxW / boxH;
+    const maxSide = Math.min(width, height) * 0.16;
+    if (boxW < 5 || boxH < 5 || boxW > maxSide || boxH > maxSide) continue;
+    if (density < 0.66 || ratio < 0.69 || ratio > 1.45) continue;
+    candidates.push({
+      x: (minX + maxX) / 2,
+      y: (minY + maxY) / 2,
+      width: boxW,
+      height: boxH,
+      density,
+      area: tail,
+    });
+  }
+
+  const specs = [
+    ['tl', p => p.x < width * 0.5 && p.y < height * 0.5, 0.026, 0.018],
+    ['tr', p => p.x >= width * 0.5 && p.y < height * 0.5, 0.974, 0.018],
+    ['bl', p => p.x < width * 0.5 && p.y >= height * 0.5, 0.026, 0.982],
+    ['br', p => p.x >= width * 0.5 && p.y >= height * 0.5, 0.974, 0.982],
+  ];
+  const corners = {};
+  for (const [name, inQuadrant, targetX, targetY] of specs) {
+    const options = candidates.filter(inQuadrant).map(point => {
+      const dx = point.x / width - targetX;
+      const dy = point.y / height - targetY;
+      const distance = Math.hypot(dx, dy);
+      const shapePenalty = Math.abs(1 - point.width / point.height) * 0.035;
+      return { point, distance, score: distance + shapePenalty };
+    }).sort((a, b) => a.score - b.score);
+    if (!options.length || options[0].distance > 0.48) return { ok: false, reason: 'تعذر تحديد مواضع علامات الزوايا؛ قرّب الورقة وأظهرها كاملة.', candidates };
+    corners[name] = options[0].point;
+  }
+  const markerWidths = Object.values(corners).map(point => point.width).sort((a, b) => a - b);
+  const medianWidth = (markerWidths[1] + markerWidths[2]) / 2;
+  if (markerWidths.some(size => size < medianWidth * 0.48 || size > medianWidth * 2.1)) {
+    return { ok: false, reason: 'العلامات غير متناسقة أو غير واضحة؛ أعد التصوير مع إظهار زوايا الورقة.', candidates };
+  }
+  const polygon = [corners.tl, corners.tr, corners.br, corners.bl];
+  if (!isConvexQuad(polygon)) return { ok: false, reason: 'تعذر تصحيح منظور الورقة؛ وجّه الكاميرا مباشرةً نحوها.', candidates };
+  const quadArea = polygonArea(polygon);
+  if (quadArea < width * height * 0.07) return { ok: false, reason: 'الورقة بعيدة أو مائلة جدًا؛ قرّبها من الكاميرا.', candidates };
+  return { ok: true, corners, candidates };
+}
+
+function polygonArea(points) {
+  let sum = 0;
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    sum += a.x * b.y - b.x * a.y;
+  }
+  return Math.abs(sum / 2);
+}
+
+function isConvexQuad(points) {
+  let sign = 0;
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    const c = points[(i + 2) % points.length];
+    const cross = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+    if (Math.abs(cross) < 1e-4) return false;
+    const nextSign = Math.sign(cross);
+    if (sign && sign !== nextSign) return false;
+    sign = nextSign;
+  }
+  return true;
+}
+
+function solveLinear(matrix, vector) {
+  const n = vector.length;
+  const a = matrix.map((row, i) => [...row, vector[i]]);
+  for (let col = 0; col < n; col++) {
+    let pivot = col;
+    for (let row = col + 1; row < n; row++) if (Math.abs(a[row][col]) > Math.abs(a[pivot][col])) pivot = row;
+    if (Math.abs(a[pivot][col]) < 1e-10) throw new Error('تعذر حساب منظور الورقة.');
+    [a[col], a[pivot]] = [a[pivot], a[col]];
+    const divisor = a[col][col];
+    for (let j = col; j <= n; j++) a[col][j] /= divisor;
+    for (let row = 0; row < n; row++) {
+      if (row === col) continue;
+      const factor = a[row][col];
+      for (let j = col; j <= n; j++) a[row][j] -= factor * a[col][j];
+    }
+  }
+  return a.map(row => row[n]);
+}
+
+function homographyFromFourPoints(source, destination) {
+  const matrix = [];
+  const vector = [];
+  for (let i = 0; i < 4; i++) {
+    const [x, y] = source[i];
+    const [u, v] = destination[i];
+    matrix.push([x, y, 1, 0, 0, 0, -u * x, -u * y]);
+    vector.push(u);
+    matrix.push([0, 0, 0, x, y, 1, -v * x, -v * y]);
+    vector.push(v);
+  }
+  return [...solveLinear(matrix, vector), 1];
+}
+
+function invert3(m) {
+  const [a, b, c, d, e, f, g, h, i] = m;
+  const A = e * i - f * h;
+  const B = f * g - d * i;
+  const C = d * h - e * g;
+  const det = a * A + b * B + c * C;
+  if (Math.abs(det) < 1e-12) throw new Error('تعذر تصحيح منظور الورقة.');
+  return [A, c * h - b * i, b * f - c * e, B, a * i - c * g, c * d - a * f, C, b * g - a * h, a * e - b * d].map(v => v / det);
+}
+
+function warpPerspective(sourceData, sourceW, sourceH, corners) {
+  const src = ['tl', 'tr', 'bl', 'br'].map(name => [corners[name].x, corners[name].y]);
+  const dst = ['tl', 'tr', 'bl', 'br'].map(name => MARK_TARGETS[name]);
+  const inverse = invert3(homographyFromFourPoints(src, dst));
+  const output = new ImageData(PAGE_W, PAGE_H);
+  const inData = sourceData.data;
+  const outData = output.data;
+  outData.fill(255);
+  for (let y = 0; y < PAGE_H; y++) {
+    for (let x = 0; x < PAGE_W; x++) {
+      const denom = inverse[6] * x + inverse[7] * y + inverse[8];
+      if (Math.abs(denom) < 1e-10) continue;
+      const sx = (inverse[0] * x + inverse[1] * y + inverse[2]) / denom;
+      const sy = (inverse[3] * x + inverse[4] * y + inverse[5]) / denom;
+      const x0 = Math.floor(sx), y0 = Math.floor(sy);
+      if (x0 < 0 || y0 < 0 || x0 + 1 >= sourceW || y0 + 1 >= sourceH) continue;
+      const fx = sx - x0, fy = sy - y0;
+      const i00 = (y0 * sourceW + x0) * 4, i01 = i00 + sourceW * 4;
+      const o = (y * PAGE_W + x) * 4;
+      for (let c = 0; c < 3; c++) {
+        outData[o + c] = inData[i00 + c] * (1 - fx) * (1 - fy) + inData[i00 + 4 + c] * fx * (1 - fy) + inData[i01 + c] * (1 - fx) * fy + inData[i01 + 4 + c] * fx * fy;
+      }
+    }
+  }
+  return output;
+}
+
+function otsuThreshold(imageData) {
+  const histogram = new Uint32Array(256);
+  const data = imageData.data;
+  const sampleEvery = 5;
+  let total = 0;
+  for (let p = 0; p < data.length; p += 4 * sampleEvery) {
+    const gray = Math.round(data[p] * 0.299 + data[p + 1] * 0.587 + data[p + 2] * 0.114);
+    histogram[gray]++;
+    total++;
+  }
+  let sum = 0;
+  for (let t = 0; t < 256; t++) sum += t * histogram[t];
+  let sumBackground = 0;
+  let weightBackground = 0;
+  let maxVariance = -1;
+  let threshold = 128;
+  for (let t = 0; t < 256; t++) {
+    weightBackground += histogram[t];
+    if (!weightBackground) continue;
+    const weightForeground = total - weightBackground;
+    if (!weightForeground) break;
+    sumBackground += t * histogram[t];
+    const meanBackground = sumBackground / weightBackground;
+    const meanForeground = (sum - sumBackground) / weightForeground;
+    const between = weightBackground * weightForeground * (meanBackground - meanForeground) ** 2;
+    if (between > maxVariance) { maxVariance = between; threshold = t; }
+  }
+  return Math.max(105, Math.min(175, threshold));
+}
+
+function refineGrid(rectified) {
+  const pixels = rectified.data;
+  const threshold = Math.max(135, Math.min(205, otsuThreshold(rectified) + 28));
+  const xRange = Math.round(PAGE_W * 0.012);
+  const yRange = Math.round(PAGE_H * 0.008);
+  const valueAt = (x, y) => {
+    const p = (y * PAGE_W + x) * 4;
+    return pixels[p] * 0.299 + pixels[p + 1] * 0.587 + pixels[p + 2] * 0.114;
+  };
+  const locate = (expected, axis, range) => {
+    const center = Math.round(expected * (axis === 'x' ? PAGE_W : PAGE_H));
+    const lo = Math.max(0, center - range);
+    const hi = Math.min((axis === 'x' ? PAGE_W : PAGE_H) - 1, center + range);
+    let bestPosition = center;
+    let bestStrength = -1;
+    for (let position = lo; position <= hi; position++) {
+      let strength = 0;
+      if (axis === 'x') {
+        for (let y = Math.round(PAGE_H * 0.13); y < Math.round(PAGE_H * 0.91); y++) {
+          strength += Math.max(0, threshold - valueAt(position, y));
+        }
+      } else {
+        for (let x = Math.round(PAGE_W * 0.15); x < Math.round(PAGE_W * 0.86); x++) {
+          strength += Math.max(0, threshold - valueAt(x, position));
+        }
+      }
+      if (strength > bestStrength || (strength === bestStrength && Math.abs(position - center) < Math.abs(bestPosition - center))) {
+        bestStrength = strength;
+        bestPosition = position;
+      }
+    }
+    return { ratio: bestPosition / (axis === 'x' ? PAGE_W : PAGE_H), strength: bestStrength };
+  };
+  const vertical = GRID_X.map(value => locate(value, 'x', xRange));
+  const horizontal = GRID_Y.map(value => locate(value, 'y', yRange));
+  const calibrated = [...vertical, ...horizontal].every(line => line.strength > 6000);
+  if (!calibrated) return { calibrated: false, optionX: OPTION_X, rowY: ROW_Y };
+  const optionX = [
+    (vertical[3].ratio + vertical[4].ratio) / 2,
+    (vertical[2].ratio + vertical[3].ratio) / 2,
+    (vertical[1].ratio + vertical[2].ratio) / 2,
+    (vertical[0].ratio + vertical[1].ratio) / 2,
+  ];
+  const rowY = Array.from({ length: 12 }, (_, i) => (horizontal[i + 1].ratio + horizontal[i + 2].ratio) / 2);
+  return { calibrated: true, optionX, rowY };
+}
+
+function getQuestionLayout(format = {}) {
+  const questionCount = Math.max(1, Math.min(100, Math.round(Number(format.questionCount) || 12)));
+  const requestedColumns = Math.max(1, Math.min(4, Math.round(Number(format.columns) || 1)));
+  const optionCount = Math.max(2, Math.min(6, Math.round(Number(format.optionCount) || 4)));
+  const legacy = questionCount === 12 && requestedColumns === 1 && optionCount === 4;
+  const columns = Math.min(requestedColumns, questionCount);
+  if (legacy) {
+    return {
+      questionCount, columns, optionCount, legacy: true, rowsPerColumn: 12, gridX: GRID_X, gridY: GRID_Y,
+      questions: ROW_Y.map((y, index) => ({
+        question: index,
+        column: 0,
+        row: index,
+        y,
+        xs: OPTION_X,
+        radius: 13,
+        drawRadius: 24,
+        questionX: 0.75,
+      })),
+    };
+  }
+
+  const gutter = 30, margin = 48, headerH = 38, top = 150;
+  const qw = questionCount > 99 ? 52 : 42;
+  const rowsMax = Math.ceil(questionCount / columns);
+  const cellW = Math.floor(Math.min(76, ((PAGE_W - margin * 2 - (columns - 1) * gutter) / columns - qw) / optionCount));
+  // حدّ أقصى مضغوط للصفوف حتى يحيط الإطار بمنطقة الأسئلة بدل امتداده لأسفل الصفحة.
+  const rowH = Math.min(90, (PAGE_H - 80 - top - headerH) / rowsMax);
+  const drawRadius = Math.max(3, Math.min(cellW * 0.39, rowH * 0.37, 28));
+  const colW = qw + optionCount * cellW;
+  const totalW = columns * colW + (columns - 1) * gutter;
+  const startX = (PAGE_W - totalW) / 2;
+  const base = Math.floor(questionCount / columns), extra = questionCount % columns;
+  const questions = [], cols = [];
+  let index = 0;
+  for (let column = 0; column < columns; column++) {
+    const rows = base + (column < extra ? 1 : 0);
+    const right = startX + totalW - column * (colW + gutter);
+    cols.push({ left: right - colW, right, rows });
+    for (let row = 0; row < rows; row++, index++) {
+      questions.push({
+        question: index, column, row, drawRadius,
+        y: (top + headerH + (row + 0.5) * rowH) / PAGE_H,
+        radius: Math.max(3, drawRadius * 0.54),
+        questionX: (right - qw / 2) / PAGE_W,
+        xs: Array.from({ length: optionCount }, (_, o) => (right - qw - (o + 0.5) * cellW) / PAGE_W),
+      });
+    }
+  }
+  return { questionCount, columns, requestedColumns, optionCount, legacy: false, rowsMax, cellW, rowH, drawRadius, qw, top, headerH, cols, questions };
+}
+
+function sampleBubbles(rectified, questions) {
+  const threshold = otsuThreshold(rectified);
+  const pixels = rectified.data;
+  const grayAt = (cx, cy, dx, dy) => {
+    const p = ((cy + dy) * PAGE_W + cx + dx) * 4;
+    return pixels[p] * 0.299 + pixels[p + 1] * 0.587 + pixels[p + 2] * 0.114;
+  };
+  const scores = [];
+  for (const question of questions) {
+    const row = [];
+    const radius = Math.max(3, Math.round(question.radius));
+    const diskOffsets = [];
+    const paperOffsets = [];
+    const r2 = radius * radius;
+    for (let dy = -Math.round(radius * 1.65); dy <= Math.round(radius * 1.65); dy++) {
+      for (let dx = -Math.round(radius * 1.65); dx <= Math.round(radius * 1.65); dx++) {
+        const distance = dx * dx + dy * dy;
+        // نقرأ الحلقة الخارجية حتى لا تُحتسب الحروف المطبوعة داخل الدوائر كتظليل.
+        if (distance <= r2 && distance >= (radius * 0.62) ** 2) diskOffsets.push([dx, dy]);
+        else if (distance >= (radius * 1.2) ** 2 && distance <= (radius * 1.65) ** 2) paperOffsets.push([dx, dy]);
+      }
+    }
+    const cy = Math.round(PAGE_H * question.y);
+    for (const xRatio of question.xs) {
+      const cx = Math.round(PAGE_W * xRatio);
+      const paper = paperOffsets.map(([dx, dy]) => grayAt(cx, cy, dx, dy)).sort((a, b) => a - b);
+      const paperLevel = paper[Math.floor(paper.length * 0.6)] ?? 245;
+      const softThreshold = Math.max(90, paperLevel - 12);
+      let dark = 0;
+      let soft = 0;
+      for (const [dx, dy] of diskOffsets) {
+        const gray = grayAt(cx, cy, dx, dy);
+        if (gray < threshold) dark++;
+        if (gray < softThreshold) soft++;
+      }
+      const darkRatio = dark / diskOffsets.length;
+      const softRatio = soft / diskOffsets.length;
+      row.push(Math.max(darkRatio, softRatio * 0.62));
+    }
+    scores.push(row);
+  }
+  return scores;
+}
+
+function classifyRows(scores) {
+  return scores.map((row, questionIndex) => {
+    const ranked = row.map((score, index) => ({ score, index })).sort((a, b) => b.score - a.score);
+    const [best, second] = ranked;
+    if (best.score < 0.22) {
+      return { question: questionIndex + 1, answer: null, status: 'blank', scores: row };
+    }
+    if (second.score >= 0.22 && best.score - second.score < 0.065) {
+      return { question: questionIndex + 1, answer: null, status: 'ambiguous', scores: row };
+    }
+    return {
+      question: questionIndex + 1,
+      answer: best.index,
+      status: best.score < 0.32 ? 'review' : 'read',
+      scores: row,
+    };
+  });
+}
+
+function makePreview(rectified) {
+  const canvas = document.createElement('canvas');
+  canvas.width = PAGE_W;
+  canvas.height = PAGE_H;
+  canvas.getContext('2d').putImageData(rectified, 0, 0);
+  return canvas.toDataURL('image/jpeg', 0.72);
+}
+
+async function processImageSource(source, format = {}) {
+  let bitmap;
+  if (source instanceof HTMLCanvasElement) {
+    bitmap = source;
+  } else {
+    bitmap = await createImageBitmap(source, { imageOrientation: 'from-image' }).catch(() => createImageBitmap(source));
+  }
+  const isBitmap = !(source instanceof HTMLCanvasElement);
+  const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+  const width = Math.max(1, Math.round(bitmap.width * scale));
+  const height = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  context.drawImage(bitmap, 0, 0, width, height);
+  if (isBitmap && bitmap.close) bitmap.close();
+  const sourceImage = context.getImageData(0, 0, width, height);
+  const detection = detectFiducials(sourceImage, width, height);
+  if (!detection.ok) throw new Error(detection.reason);
+  const rectified = warpPerspective(sourceImage, width, height, detection.corners);
+  const layout = getQuestionLayout(format);
+  let questions = layout.questions;
+  let gridCalibrated = true;
+  if (layout.legacy) {
+    const grid = refineGrid(rectified);
+    if (grid.calibrated) questions = questions.map((question, index) => ({ ...question, y: grid.rowY[index], xs: grid.optionX }));
+    // Without printed grid lines, the registered template coordinates are the fallback.
+    gridCalibrated = true;
+  }
+  const scores = sampleBubbles(rectified, questions);
+  return {
+    answers: classifyRows(scores),
+    preview: makePreview(rectified),
+    markerCount: detection.candidates.length,
+    gridCalibrated,
+    layoutType: layout.legacy ? 'legacy' : 'configured',
+    dimensions: { width, height },
+  };
+}
+
+function gradeAnswers(scannedAnswers, answerKey) {
+  let correct = 0, wrong = 0, blank = 0, review = 0;
+  const total = answerKey.length;
+  for (let i = 0; i < total; i++) {
+    const row = scannedAnswers[i];
+    if (row?.requiresReview) review++;
+    else if (row?.answer === null || row?.answer === undefined) blank++;
+    else if (row.answer === answerKey[i]) correct++;
+    else wrong++;
+  }
+  return { correct, answered: correct + wrong, review, blank, total, wrong };
+}
+
+function gradeAnswersOld(scannedAnswers, answerKey) {
+  let correct = 0;
+  let answered = 0;
+  let review = 0;
+  let blank = 0;
+  const total = answerKey.length;
+  for (let i = 0; i < total; i++) {
+    const row = scannedAnswers[i];
+    if (row?.requiresReview) review++;
+    if (row?.answer === null || row?.answer === undefined) {
+      if (!row?.requiresReview) blank++;
+    } else {
+      answered++;
+      if (row.answer === answerKey[i]) correct++;
+    }
+  }
+  return { correct, answered, review, blank, total, wrong: Math.max(0, answered - correct) };
+}
+
+function optionLabel(index) {
+  return ANSWERS[index] ?? '—';
+}
+
+const letters = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
+const arabicNumber = new Intl.NumberFormat('ar-EG', { useGrouping: false });
+let formFormat = { questionCount: 12, columns: 2, optionCount: 4 };
+const answerKey = Array(formFormat.questionCount).fill(null);
+const results = [];
+let nextResultId = 1;
+let activeStream = null;
+let cameraFrame = 0;
+let cameraTimer = 0;
+let lastScanAt = 0;
+let markerStreak = 0;
+let autoTriggered = false;
+let busy = false;
+let toastTimer = 0;
+
+const answerKeyEl = document.getElementById('answerKey');
+const keyProgressEl = document.getElementById('keyProgress');
+const keyHintEl = document.getElementById('keyHint');
+const keyGateEl = document.getElementById('keyGate');
+const cameraButton = document.getElementById('cameraButton');
+const fileButton = document.getElementById('fileButton');
+const imageInput = document.getElementById('imageInput');
+const cameraStage = document.getElementById('cameraStage');
+const cameraVideo = document.getElementById('cameraVideo');
+const cameraFeed = document.getElementById('cameraFeed');
+const cameraOverlay = document.getElementById('cameraOverlay');
+const cameraStatus = document.getElementById('cameraStatus');
+const cameraBadge = document.getElementById('cameraBadge');
+const captureNow = document.getElementById('captureNow');
+const scanMessage = document.getElementById('scanMessage');
+const resultsSection = document.getElementById('resultsSection');
+const resultsList = document.getElementById('resultsList');
+const toastEl = document.getElementById('toast');
+const questionCountInput = document.getElementById('questionCount');
+const columnCountInput = document.getElementById('columnCount');
+const optionCountInput = document.getElementById('optionCount');
+const formPreview = document.getElementById('formPreview');
+const builderHint = document.getElementById('builderHint');
+const downloadFormButton = document.getElementById('downloadForm');
+
+function renderKey() {
+  answerKeyEl.innerHTML = '';
+  answerKeyEl.dataset.options = String(formFormat.optionCount);
+  for (let question = 0; question < formFormat.questionCount; question++) {
+    const item = document.createElement('div');
+    item.className = `key-item${answerKey[question] === null ? '' : ' is-set'}`;
+    const number = document.createElement('span');
+    number.className = 'question-number';
+    number.textContent = arabicNumber.format(question + 1);
+    item.append(number);
+    const choices = document.createElement('div');
+    choices.className = 'option-set';
+    choices.setAttribute('role', 'radiogroup');
+    choices.setAttribute('aria-label', `السؤال ${arabicNumber.format(question + 1)}`);
+    letters.slice(0, formFormat.optionCount).forEach((letter, answer) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'option-choice';
+      button.textContent = letter;
+      button.setAttribute('role', 'radio');
+      button.setAttribute('aria-checked', answerKey[question] === answer ? 'true' : 'false');
+      button.setAttribute('aria-label', `${letter} للسؤال ${arabicNumber.format(question + 1)}`);
+      button.addEventListener('click', () => {
+        answerKey[question] = answer;
+        item.classList.add('is-set');
+        choices.querySelectorAll('.option-choice').forEach((optionButton, optionIndex) => {
+          optionButton.setAttribute('aria-checked', optionIndex === answer ? 'true' : 'false');
+        });
+        updateKeyState();
+      });
+      choices.append(button);
+    });
+    item.append(choices);
+    answerKeyEl.append(item);
+  }
+  updateKeyState(false);
+}
+
+function updateKeyState(rerenderResults = true) {
+  const filled = answerKey.filter(answer => answer !== null).length;
+  keyProgressEl.textContent = arabicNumber.format(filled);
+  keyProgressEl.nextElementSibling.textContent = ` / ${arabicNumber.format(formFormat.questionCount)}`;
+  answerKeyEl.setAttribute('aria-label', `مفتاح الإجابة، ${arabicNumber.format(formFormat.questionCount)} سؤالًا`);
+  const complete = filled === formFormat.questionCount;
+  keyHintEl.textContent = complete ? 'المفتاح مكتمل — جاهز للتصحيح.' : 'اختر الإجابة الصحيحة لكل الأسئلة لإكمال المفتاح.';
+  keyHintEl.classList.toggle('is-complete', complete);
+  keyGateEl.hidden = complete;
+  cameraButton.disabled = busy || (!complete && !activeStream);
+  imageInput.disabled = !complete || busy;
+  fileButton.classList.toggle('is-disabled', !complete || busy);
+  fileButton.setAttribute('aria-disabled', String(!complete || busy));
+  if (rerenderResults && results.length) renderResults();
+}
+
+function drawAnswerSheet(canvas, scale = 1) {
+  const width = 900;
+  const height = 1273;
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+  const context = canvas.getContext('2d');
+  context.setTransform(scale, 0, 0, scale, 0, 0);
+  context.fillStyle = '#fff';
+  context.fillRect(0, 0, width, height);
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.direction = 'rtl';
+
+  // Frame is drawn after layout so it can hug the actual question grid.
+  context.fillStyle = '#123f34';
+  context.font = 'bold 34px Tahoma, Arial, sans-serif';
+  context.fillText('نموذج الإجابة', width / 2, 91);
+  context.fillStyle = '#34443d';
+  context.font = 'bold 20px Tahoma, Arial, sans-serif';
+  const colsText = n => n === 1 ? 'عمود واحد' : n === 2 ? 'عمودان' : `${arabicNumber.format(n)} أعمدة`;
+  const optsText = n => n === 2 ? 'خياران' : `${arabicNumber.format(n)} خيارات`;
+  context.fillText(`${arabicNumber.format(formFormat.questionCount)} سؤالًا  ·  ${colsText(formFormat.columns)}  ·  ${optsText(formFormat.optionCount)}`, width / 2, 135);
+  context.strokeStyle = '#aebdb4';
+  context.lineWidth = 1.5;
+  context.beginPath(); context.moveTo(100, 169); context.lineTo(width - 100, 169); context.stroke();
+
+  const layout = getQuestionLayout(formFormat);
+  if (layout.legacy) {
+    context.strokeStyle = '#293b34';
+    context.lineWidth = 2.5;
+    context.strokeRect(58, 58, width - 116, height - 116);
+    // Keep every legacy bubble center and size exactly aligned with the grading template.
+    const headerY = (layout.gridY[0] + layout.gridY[1]) * height / 2;
+    context.fillStyle = '#173f35';
+    context.font = 'bold 34px Tahoma, Arial, sans-serif';
+    context.fillText('السؤال', 0.75 * width, headerY);
+    layout.questions.forEach((question, index) => {
+      const y = question.y * height;
+      context.fillStyle = '#172a23';
+      context.font = 'bold 42px Tahoma, Arial, sans-serif';
+      context.fillText(arabicNumber.format(index + 1), question.questionX * width, y);
+      question.xs.forEach((x, option) => {
+        context.beginPath();
+        context.arc(x * width, y, 27, 0, Math.PI * 2);
+        context.strokeStyle = '#172a23';
+        context.lineWidth = 4.5;
+        context.stroke();
+        context.fillStyle = '#586a62';
+        context.font = 'bold 21px Tahoma, Arial, sans-serif';
+        context.fillText(letters[option], x * width, y);
+      });
+    });
+  } else {
+    const { top, headerH, rowH, qw, cellW, drawRadius, optionCount } = layout;
+    const left = Math.min(...layout.cols.map(col => col.left)) - 28;
+    const right = Math.max(...layout.cols.map(col => col.right)) + 28;
+    const bottom = top + headerH + layout.rowsMax * rowH + 24;
+    context.strokeStyle = '#293b34';
+    context.lineWidth = 2.5;
+    context.strokeRect(left, 48, right - left, Math.min(height - 96, bottom - 48));
+    layout.cols.forEach(col => {
+      context.fillStyle = '#eaf0eb';
+      context.fillRect(col.left, top, col.right - col.left, headerH);
+      context.strokeStyle = '#b8c7bd';
+      context.lineWidth = 1.5;
+      context.strokeRect(col.left, top, col.right - col.left, headerH);
+      context.fillStyle = '#173f35';
+      context.font = 'bold 22px Tahoma, Arial, sans-serif';
+      context.fillText('السؤال', col.right - qw / 2, top + headerH / 2);
+    });
+    context.fillStyle = '#172a23';
+    context.font = `bold ${Math.round(Math.min(42, rowH * 0.72))}px Tahoma, Arial, sans-serif`;
+    context.lineWidth = Math.max(1.8, Math.min(4, drawRadius / 5.5));
+    context.strokeStyle = '#172a23';
+    layout.questions.forEach(question => {
+      const y = question.y * height;
+      context.font = `bold ${question.question === 0 ? Math.round(Math.min(42, rowH * 0.72)) : Math.round(Math.min(27, rowH * 0.42))}px Tahoma, Arial, sans-serif`;
+      context.fillText(arabicNumber.format(question.question + 1), question.questionX * width, y);
+      question.xs.forEach((cx, option) => {
+        context.beginPath();
+        context.arc(cx * width, y, drawRadius, 0, Math.PI * 2);
+        context.stroke();
+        context.fillStyle = '#586a62';
+        context.font = `bold ${Math.round(Math.max(11, drawRadius * 0.78))}px Tahoma, Arial, sans-serif`;
+        context.fillText(letters[option], cx * width, y);
+      });
+    });
+  }
+
+  // Registration squares remain at the exact coordinates used by the scanner.
+  context.fillStyle = '#000';
+  const markerSize = 36;
+  for (const [xRatio, yRatio] of [[0.026, 0.018], [0.974, 0.018], [0.026, 0.982], [0.974, 0.982]]) {
+    context.fillRect(xRatio * width - markerSize / 2, yRatio * height - markerSize / 2, markerSize, markerSize);
+  }
+}
+
+function updateBuilderFormat() {
+  if (busy) return;
+  const questionCount = Number(questionCountInput.value);
+  if (!Number.isInteger(questionCount) || questionCount < 1 || questionCount > 100) {
+    builderHint.textContent = 'اختر عددًا صحيحًا من ١ إلى ١٠٠ سؤالًا.';
+    builderHint.classList.add('is-warning');
+    return;
+  }
+  const nextFormat = {
+    questionCount,
+    columns: Number(columnCountInput.value),
+    optionCount: Number(optionCountInput.value),
+  };
+  const changed = Object.keys(nextFormat).some(key => nextFormat[key] !== formFormat[key]);
+  if (changed) {
+    const oldKey = [...answerKey];
+    stopCamera();
+    formFormat = nextFormat;
+    answerKey.splice(0, answerKey.length, ...Array.from({ length: nextFormat.questionCount }, (_, i) => oldKey[i] != null && oldKey[i] < nextFormat.optionCount ? oldKey[i] : null));
+    renderKey();
+    const incomplete = answerKey.includes(null);
+    builderHint.textContent = incomplete ? 'تم تحديث النموذج. أكمل الإجابات الناقصة في المفتاح.' : 'تم تحديث تخطيط الورقة، والمفتاح كما هو.';
+    builderHint.classList.toggle('is-warning', incomplete);
+  } else {
+    builderHint.textContent = 'إعداداتك الحالية تطابق مفتاح الإجابة أدناه.';
+    builderHint.classList.remove('is-warning');
+  }
+  drawAnswerSheet(formPreview);
+  const layout = getQuestionLayout(formFormat);
+  if (!layout.legacy) {
+    const mm = layout.drawRadius * 2 * 210 / PAGE_W;
+    if (mm < 4) {
+      builderHint.textContent = `الفقاعات صغيرة (${arabicNumber.format(Math.round(mm * 10) / 10)} مم)؛ زد عدد الأعمدة أو قلّل الخيارات لسهولة التظليل والقراءة.`;
+      builderHint.classList.add('is-warning');
+    } else if (layout.columns < layout.requestedColumns) {
+      builderHint.textContent = `عدد الأسئلة قليل، فاستُخدمت ${arabicNumber.format(layout.columns)} أعمدة فقط.`;
+      builderHint.classList.add('is-warning');
+    }
+  }
+}
+
+async function downloadAnswerSheet() {
+  const output = document.createElement('canvas');
+  drawAnswerSheet(output, 2);
+  const blob = await new Promise(resolve => output.toBlob(resolve, 'image/png'));
+  if (!blob) {
+    showToast('تعذر إنشاء الصورة. حاول مرة أخرى.');
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `answer-sheet-${formFormat.questionCount}q-${formFormat.columns}col-${formFormat.optionCount}opt.png`;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('تم تنزيل ورقة الإجابة كصورة PNG.');
+}
+
+function showMessage(text, kind = 'info') {
+  scanMessage.textContent = text;
+  scanMessage.className = `scan-message ${kind}`;
+  scanMessage.hidden = false;
+}
+
+function hideMessage() {
+  scanMessage.hidden = true;
+  scanMessage.textContent = '';
+}
+
+function showToast(text) {
+  toastEl.textContent = text;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => toastEl.classList.remove('show'), 2500);
+}
+
+function setBusy(value) {
+  busy = value;
+  questionCountInput.disabled = value;
+  columnCountInput.disabled = value;
+  optionCountInput.disabled = value;
+  downloadFormButton.disabled = value;
+  cameraButton.disabled = value || answerKey.some(answer => answer === null);
+  imageInput.disabled = value || answerKey.some(answer => answer === null);
+  fileButton.classList.toggle('is-disabled', value || answerKey.some(answer => answer === null));
+}
+
+function stopCamera() {
+  if (cameraFrame) cancelAnimationFrame(cameraFrame);
+  cameraFrame = 0;
+  clearTimeout(cameraTimer);
+  cameraTimer = 0;
+  if (activeStream) activeStream.getTracks().forEach(track => track.stop());
+  activeStream = null;
+  cameraVideo.srcObject = null;
+  cameraStage.hidden = true;
+  cameraBadge.classList.remove('has-markers');
+  cameraButton.innerHTML = '<span class="button-icon" aria-hidden="true">▣</span> افتح الكاميرا';
+  cameraButton.classList.remove('button-secondary');
+  cameraButton.classList.add('button-primary');
+  cameraButton.disabled = busy || answerKey.some(answer => answer === null);
+  cameraStatus.textContent = 'ابحث عن العلامات السوداء…';
+  markerStreak = 0;
+  autoTriggered = false;
+}
+
+async function toggleCamera() {
+  if (activeStream) {
+    stopCamera();
+    return;
+  }
+  hideMessage();
+  if (!navigator.mediaDevices?.getUserMedia) {
+    showMessage('الكاميرا المباشرة غير متاحة في هذا المتصفح. اختر صورة من الجهاز بدلًا منها.', 'error');
+    return;
+  }
+  try {
+    activeStream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1080 }, height: { ideal: 1920 }, aspectRatio: { ideal: 0.75 } },
+    });
+    cameraVideo.srcObject = activeStream;
+    cameraStage.hidden = false;
+    await cameraVideo.play();
+    syncCameraOrientation();
+    cameraButton.innerHTML = '<span class="button-icon" aria-hidden="true">×</span> إيقاف الكاميرا';
+    cameraButton.classList.remove('button-primary');
+    cameraButton.classList.add('button-secondary');
+    cameraButton.disabled = false;
+    markerStreak = 0;
+    autoTriggered = false;
+    cameraStatus.textContent = 'ابحث عن العلامات السوداء…';
+    checkLiveFrame();
+  } catch (error) {
+    stopCamera();
+    const denied = error?.name === 'NotAllowedError' || error?.name === 'PermissionDeniedError';
+    showMessage(denied ? 'لم يُسمح باستخدام الكاميرا. غيّر إذن الكاميرا أو اختر صورة من جهازك.' : 'تعذر فتح الكاميرا على هذا الجهاز. يمكنك اختيار صورة بدلًا منها.', 'error');
+  }
+}
+
+function checkLiveFrame() {
+  if (!activeStream || cameraVideo.readyState < 2) {
+    cameraFrame = requestAnimationFrame(checkLiveFrame);
+    return;
+  }
+  renderCameraPreview();
+  const now = performance.now();
+  if (now - lastScanAt >= 600) {
+    lastScanAt = now;
+    const scale = Math.min(1, 640 / cameraVideo.videoWidth);
+    const width = Math.max(1, Math.round(cameraVideo.videoWidth * scale));
+    const height = Math.max(1, Math.round(cameraVideo.videoHeight * scale));
+    const probe = document.createElement('canvas');
+    probe.width = width;
+    probe.height = height;
+    const context = probe.getContext('2d', { willReadFrequently: true });
+    context.drawImage(cameraVideo, 0, 0, width, height);
+    const detection = detectFiducials(context.getImageData(0, 0, width, height), width, height);
+    drawCameraOverlay(detection, width, height);
+    if (detection.ok) {
+      markerStreak++;
+      cameraBadge.classList.add('has-markers');
+      cameraStatus.textContent = markerStreak < 2 ? 'ظهرت العلامات — ثبّت الهاتف…' : 'تم التعرف على الحدود — جارٍ الالتقاط…';
+      if (markerStreak >= 2 && !autoTriggered) {
+        autoTriggered = true;
+        cameraTimer = window.setTimeout(captureFromCamera, 650);
+      }
+    } else {
+      if (cameraTimer) clearTimeout(cameraTimer);
+      cameraTimer = 0;
+      autoTriggered = false;
+      markerStreak = 0;
+      cameraBadge.classList.remove('has-markers');
+      cameraStatus.textContent = 'وجّه الكاميرا حتى تظهر العلامات الأربع…';
+    }
+  }
+  cameraFrame = requestAnimationFrame(checkLiveFrame);
+}
+
+function syncCameraOrientation() {
+  // The 9:16 stage changes display size only; never rotate the camera feed to match it.
+  cameraStage.classList.remove('is-rotated');
+}
+
+function renderCameraPreview() {
+  if (!cameraVideo.videoWidth || !cameraStage.clientWidth) return;
+  syncCameraOrientation();
+  const stageRect = cameraStage.getBoundingClientRect();
+  const stageWidth = Math.max(1, stageRect.width);
+  const stageHeight = Math.max(1, stageRect.height);
+  const pixelRatio = window.devicePixelRatio || 1;
+  const targetWidth = Math.round(stageWidth * pixelRatio);
+  const targetHeight = Math.round(stageHeight * pixelRatio);
+  if (cameraFeed.width !== targetWidth || cameraFeed.height !== targetHeight) {
+    cameraFeed.width = targetWidth;
+    cameraFeed.height = targetHeight;
+  }
+  const context = cameraFeed.getContext('2d');
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  context.clearRect(0, 0, stageWidth, stageHeight);
+  context.fillStyle = '#15201d';
+  context.fillRect(0, 0, stageWidth, stageHeight);
+  const fitScale = Math.max(stageWidth / cameraVideo.videoWidth, stageHeight / cameraVideo.videoHeight);
+  const renderedWidth = cameraVideo.videoWidth * fitScale;
+  const renderedHeight = cameraVideo.videoHeight * fitScale;
+  context.drawImage(cameraVideo, (stageWidth - renderedWidth) / 2, (stageHeight - renderedHeight) / 2, renderedWidth, renderedHeight);
+}
+
+function drawCameraOverlay(detection, probeWidth, probeHeight) {
+  const canvas = cameraOverlay;
+  if (!cameraVideo.videoWidth || !cameraStage.clientWidth) return;
+  syncCameraOrientation();
+  const stageRect = cameraStage.getBoundingClientRect();
+  const pixelRatio = window.devicePixelRatio || 1;
+  const stageWidth = Math.max(1, stageRect.width);
+  const stageHeight = Math.max(1, stageRect.height);
+  const targetWidth = Math.round(stageWidth * pixelRatio);
+  const targetHeight = Math.round(stageHeight * pixelRatio);
+  if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+  }
+  const context = canvas.getContext('2d');
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  context.clearRect(0, 0, stageWidth, stageHeight);
+  if (!detection.ok) return;
+  const fitScale = Math.max(stageWidth / cameraVideo.videoWidth, stageHeight / cameraVideo.videoHeight);
+  const renderedWidth = cameraVideo.videoWidth * fitScale;
+  const renderedHeight = cameraVideo.videoHeight * fitScale;
+  const offsetX = (stageWidth - renderedWidth) / 2;
+  const offsetY = (stageHeight - renderedHeight) / 2;
+  const points = ['tl', 'tr', 'br', 'bl'].map(name => ({
+    x: detection.corners[name].x / probeWidth * renderedWidth + offsetX,
+    y: detection.corners[name].y / probeHeight * renderedHeight + offsetY,
+  }));
+  context.save();
+  context.strokeStyle = '#76e0ad';
+  context.lineWidth = Math.max(3, stageWidth / 260);
+  context.shadowColor = '#052c20';
+  context.shadowBlur = 10;
+  context.beginPath();
+  points.forEach((point, index) => index ? context.lineTo(point.x, point.y) : context.moveTo(point.x, point.y));
+  context.closePath();
+  context.stroke();
+  for (const point of points) {
+    context.beginPath();
+    context.arc(point.x, point.y, stageWidth / 95, 0, Math.PI * 2);
+    context.fillStyle = '#76e0ad';
+    context.fill();
+  }
+  context.restore();
+}
+
+function captureFromCamera() {
+  if (!activeStream || !cameraVideo.videoWidth) return;
+  // Preserve the raw camera frame for scanning; only the live preview is cropped to fill the portrait stage.
+  const canvas = document.createElement('canvas');
+  canvas.width = cameraVideo.videoWidth;
+  canvas.height = cameraVideo.videoHeight;
+  canvas.getContext('2d').drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
+  stopCamera();
+  processSource(canvas);
+}
+
+async function processSource(source) {
+  if (busy) return;
+  if (answerKey.some(answer => answer === null)) {
+    showMessage('أكمل نموذج الإجابة أولًا، ثم التقط الورقة من جديد.', 'error');
+    return;
+  }
+  const scanFormat = { ...formFormat };
+  const scanAnswerKey = [...answerKey];
+  setBusy(true);
+  showMessage('نحلّل الصورة داخل جهازك ونبحث عن العلامات…', 'info');
+  try {
+    const result = await processImageSource(source, scanFormat);
+    const answers = result.answers.map(row => ({
+      ...row,
+      requiresReview: row.status === 'review' || row.status === 'ambiguous',
+    }));
+    results.unshift({ id: nextResultId++, answers, preview: result.preview, answerKey: scanAnswerKey, format: scanFormat });
+    renderResults();
+    const message = result.layoutType === 'configured'
+      ? 'تمت قراءة الورقة حسب إعداد النموذج الحالي. راجع أي إجابة مميّزة قبل اعتماد الدرجة.'
+      : result.gridCalibrated
+        ? 'تم ضبط مراكز الفقاعات وفق قالب الورقة الحالي. راجع أي إجابة مميّزة قبل اعتماد الدرجة.'
+        : 'قُوّمت الورقة، واستخدمنا مواضع القالب الأساسية. راجع أي إجابة مميّزة قبل اعتماد الدرجة.';
+    showMessage(message, result.gridCalibrated ? 'success' : 'info');
+    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (error) {
+    showMessage(error?.message || 'تعذرت قراءة الصورة. تأكد من وضوح العلامات وجرب صورة أخرى.', 'error');
+  } finally {
+    setBusy(false);
+    updateKeyState(false);
+  }
+}
+
+async function processFiles(files) {
+  const imageFiles = files.filter(file => file.type.startsWith('image/'));
+  if (!imageFiles.length) {
+    showMessage('لم يتم العثور على ملف صورة مناسب.', 'error');
+    return;
+  }
+  if (imageFiles.length > 1) showMessage(`سيجري تصحيح ${arabicNumber.format(imageFiles.length)} صور بالتتابع.`, 'info');
+  for (let index = 0; index < imageFiles.length; index++) {
+    if (index > 0) showMessage(`جاري تصحيح الصورة ${arabicNumber.format(index + 1)} من ${arabicNumber.format(imageFiles.length)}…`, 'info');
+    await processSource(imageFiles[index]);
+  }
+}
+
+function createAnswerCell(result, row, index, key) {
+  const cell = document.createElement('div');
+  const isCorrect = !row.requiresReview && row.answer !== null && row.answer === key[index];
+  const isWrong = !row.requiresReview && row.answer !== null && row.answer !== key[index];
+  cell.className = `answer-cell${row.requiresReview ? ' needs-review' : ''}${isCorrect ? ' is-right' : ''}${isWrong ? ' is-wrong' : ''}${row.answer === null ? ' is-blank' : ''}`;
+  const question = document.createElement('span');
+  question.className = 'answer-q';
+  question.textContent = arabicNumber.format(index + 1);
+  const letter = document.createElement('span');
+  letter.className = 'answer-letter';
+  letter.textContent = row.requiresReview ? (row.answer === null ? '؟' : optionLabel(row.answer) + '؟') : optionLabel(row.answer);
+  const select = document.createElement('select');
+  select.className = 'answer-select';
+  select.setAttribute('aria-label', `مراجعة إجابة السؤال ${arabicNumber.format(index + 1)}`);
+  select.dataset.resultId = String(result.id);
+  select.dataset.question = String(index);
+  const blank = document.createElement('option');
+  blank.value = '';
+  blank.textContent = '—';
+  blank.selected = !row.requiresReview && row.answer === null;
+  if (row.requiresReview) {
+    const pending = document.createElement('option');
+    pending.value = '?';
+    pending.textContent = '؟';
+    pending.selected = true;
+    select.append(pending);
+  }
+  select.append(blank);
+  letters.slice(0, result.format.optionCount).forEach((value, option) => {
+    const item = document.createElement('option');
+    item.value = String(option);
+    item.textContent = value;
+    item.selected = !row.requiresReview && row.answer === option;
+    select.append(item);
+  });
+  cell.append(question, letter, select);
+  return cell;
+}
+
+function renderResults() {
+  resultsSection.hidden = results.length === 0;
+  resultsList.innerHTML = '';
+  for (const result of results) {
+    const grade = gradeAnswers(result.answers, result.answerKey);
+    const card = document.createElement('article');
+    card.className = 'result-card';
+    card.dataset.id = String(result.id);
+    const top = document.createElement('div');
+    top.className = 'result-top';
+    const score = document.createElement('div');
+    score.className = 'score-wrap';
+    score.style.setProperty('--score-angle', `${(grade.correct / Math.max(1, grade.total)) * 360}deg`);
+    score.innerHTML = `<span class="score-main">${arabicNumber.format(grade.correct)}</span><span class="score-denom">من ${arabicNumber.format(grade.total)}</span>`;
+    const copy = document.createElement('div');
+    copy.className = 'result-copy';
+    const title = document.createElement('h3');
+    title.textContent = `ورقة ${arabicNumber.format(result.id)}`;
+    const description = document.createElement('p');
+    description.textContent = grade.review ? 'بعض العلامات غير واضحة؛ عدّل الإجابات المميّزة ثم راجع الدرجة.' : 'القراءة مكتملة. يمكنك تعديل أي إجابة يدويًا.';
+    const tag = document.createElement('span');
+    tag.className = `result-tag${grade.review ? ' needs-review' : ''}`;
+    tag.innerHTML = grade.review ? '<span aria-hidden="true">◉</span> نتيجة مؤقتة — تحتاج مراجعة' : '<span aria-hidden="true">✓</span> الدرجة جاهزة';
+    copy.append(title, description, tag);
+    top.append(score, copy);
+
+    const stats = document.createElement('div');
+    stats.className = 'result-stats';
+    const statData = [
+      ['صحيح', grade.correct, 'is-correct'],
+      ['خطأ', grade.wrong, 'is-wrong'],
+      ['فارغ', grade.blank, ''],
+      ['مراجعة', grade.review, 'is-review'],
+    ];
+    statData.forEach(([label, value, modifier]) => {
+      const stat = document.createElement('div');
+      stat.className = `stat ${modifier}`;
+      stat.innerHTML = `<strong>${arabicNumber.format(value)}</strong><span>${label}</span>`;
+      stats.append(stat);
+    });
+
+    const body = document.createElement('div');
+    body.className = 'result-body';
+    const preview = document.createElement('img');
+    preview.className = 'result-preview';
+    preview.src = result.preview;
+    preview.alt = 'معاينة مؤقتة للورقة بعد تقويم المنظور';
+    const reviewGrid = document.createElement('div');
+    reviewGrid.className = 'answer-review';
+    result.answers.forEach((row, index) => reviewGrid.append(createAnswerCell(result, row, index, result.answerKey)));
+    if (grade.review) {
+      const note = document.createElement('p');
+      note.className = 'review-note';
+      note.textContent = 'القيمة (؟) تعني قراءة غير مؤكدة. اختر الإجابة من القائمة أو اتركها فارغة إذا لم تُحدّد إجابة.';
+      reviewGrid.append(note);
+    }
+    body.append(preview, reviewGrid);
+
+    const actions = document.createElement('div');
+    actions.className = 'result-actions';
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'remove-result';
+    remove.textContent = 'حذف هذه النتيجة من الجلسة';
+    remove.addEventListener('click', () => {
+      const index = results.findIndex(item => item.id === result.id);
+      if (index >= 0) results.splice(index, 1);
+      renderResults();
+    });
+    actions.append(remove);
+    card.append(top, stats, body, actions);
+    resultsList.append(card);
+  }
+}
+
+answerKeyEl.addEventListener('keydown', event => {
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+  const current = document.activeElement;
+  if (!current?.classList.contains('option-choice')) return;
+  const buttons = [...current.parentElement.querySelectorAll('.option-choice')];
+  const index = buttons.indexOf(current);
+  const direction = event.key === 'ArrowLeft' ? 1 : -1;
+  buttons[(index + direction + buttons.length) % buttons.length].focus();
+});
+
+resultsList.addEventListener('change', event => {
+  const select = event.target.closest('.answer-select');
+  if (!select) return;
+  const result = results.find(item => item.id === Number(select.dataset.resultId));
+  const question = Number(select.dataset.question);
+  if (!result || !result.answers[question]) return;
+  if (select.value === '?') return;
+  const value = select.value === '' ? null : Number(select.value);
+  result.answers[question].answer = value;
+  result.answers[question].requiresReview = false;
+  result.answers[question].status = value === null ? 'blank' : 'manual';
+  renderResults();
+  resultsList.querySelector(`.answer-select[data-result-id="${result.id}"][data-question="${question}"]`)?.focus();
+});
+
+cameraButton.addEventListener('click', toggleCamera);
+questionCountInput.addEventListener('input', updateBuilderFormat);
+columnCountInput.addEventListener('change', updateBuilderFormat);
+optionCountInput.addEventListener('change', updateBuilderFormat);
+downloadFormButton.addEventListener('click', downloadAnswerSheet);
+captureNow.addEventListener('click', () => {
+  clearTimeout(cameraTimer);
+  autoTriggered = true;
+  captureFromCamera();
+});
+imageInput.addEventListener('change', event => {
+  const files = [...(event.target.files || [])];
+  event.target.value = '';
+  processFiles(files);
+});
+document.getElementById('clearKey').addEventListener('click', () => {
+  answerKey.fill(null);
+  renderKey();
+  showToast('تم مسح نموذج الإجابة.');
+});
+document.getElementById('clearResults').addEventListener('click', () => {
+  results.length = 0;
+  nextResultId = 1;
+  renderResults();
+  hideMessage();
+  showToast('تم مسح نتائج هذه الجلسة.');
+});
+window.addEventListener('pagehide', stopCamera);
+window.addEventListener('beforeunload', stopCamera);
+renderKey();
+drawAnswerSheet(formPreview);
+
+</script>
+</body>
+</html>
