@@ -1155,11 +1155,8 @@ function checkLiveFrame() {
 }
 
 function syncCameraOrientation() {
-  if (!cameraVideo.videoWidth || !cameraStage.clientWidth) return;
-  const sourceIsPortrait = cameraVideo.videoHeight > cameraVideo.videoWidth;
-  const stageIsPortrait = cameraStage.clientHeight > cameraStage.clientWidth;
-  // This flag affects only the live preview canvas and its guide; capture keeps raw camera pixels.
-  cameraStage.classList.toggle('is-rotated', sourceIsPortrait !== stageIsPortrait);
+  // The 9:16 stage changes display size only; never rotate the camera feed to match it.
+  cameraStage.classList.remove('is-rotated');
 }
 
 function renderCameraPreview() {
@@ -1180,21 +1177,10 @@ function renderCameraPreview() {
   context.clearRect(0, 0, stageWidth, stageHeight);
   context.fillStyle = '#15201d';
   context.fillRect(0, 0, stageWidth, stageHeight);
-  if (cameraStage.classList.contains('is-rotated')) {
-    const fitScale = Math.min(stageHeight / cameraVideo.videoWidth, stageWidth / cameraVideo.videoHeight);
-    const renderedWidth = cameraVideo.videoWidth * fitScale;
-    const renderedHeight = cameraVideo.videoHeight * fitScale;
-    context.save();
-    context.translate(stageWidth / 2, stageHeight / 2);
-    context.rotate(Math.PI / 2);
-    context.drawImage(cameraVideo, -renderedWidth / 2, -renderedHeight / 2, renderedWidth, renderedHeight);
-    context.restore();
-  } else {
-    const fitScale = Math.min(stageWidth / cameraVideo.videoWidth, stageHeight / cameraVideo.videoHeight);
-    const renderedWidth = cameraVideo.videoWidth * fitScale;
-    const renderedHeight = cameraVideo.videoHeight * fitScale;
-    context.drawImage(cameraVideo, (stageWidth - renderedWidth) / 2, (stageHeight - renderedHeight) / 2, renderedWidth, renderedHeight);
-  }
+  const fitScale = Math.min(stageWidth / cameraVideo.videoWidth, stageHeight / cameraVideo.videoHeight);
+  const renderedWidth = cameraVideo.videoWidth * fitScale;
+  const renderedHeight = cameraVideo.videoHeight * fitScale;
+  context.drawImage(cameraVideo, (stageWidth - renderedWidth) / 2, (stageHeight - renderedHeight) / 2, renderedWidth, renderedHeight);
 }
 
 function drawCameraOverlay(detection, probeWidth, probeHeight) {
@@ -1215,28 +1201,15 @@ function drawCameraOverlay(detection, probeWidth, probeHeight) {
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   context.clearRect(0, 0, stageWidth, stageHeight);
   if (!detection.ok) return;
-  let points;
-  if (cameraStage.classList.contains('is-rotated')) {
-    const fitScale = Math.min(stageHeight / cameraVideo.videoWidth, stageWidth / cameraVideo.videoHeight);
-    points = ['tl', 'tr', 'br', 'bl'].map(name => {
-      const x = detection.corners[name].x / probeWidth * cameraVideo.videoWidth;
-      const y = detection.corners[name].y / probeHeight * cameraVideo.videoHeight;
-      return {
-        x: stageWidth / 2 + (cameraVideo.videoHeight / 2 - y) * fitScale,
-        y: stageHeight / 2 + (x - cameraVideo.videoWidth / 2) * fitScale,
-      };
-    });
-  } else {
-    const fitScale = Math.min(stageWidth / cameraVideo.videoWidth, stageHeight / cameraVideo.videoHeight);
-    const renderedWidth = cameraVideo.videoWidth * fitScale;
-    const renderedHeight = cameraVideo.videoHeight * fitScale;
-    const offsetX = (stageWidth - renderedWidth) / 2;
-    const offsetY = (stageHeight - renderedHeight) / 2;
-    points = ['tl', 'tr', 'br', 'bl'].map(name => ({
-      x: detection.corners[name].x / probeWidth * renderedWidth + offsetX,
-      y: detection.corners[name].y / probeHeight * renderedHeight + offsetY,
-    }));
-  }
+  const fitScale = Math.min(stageWidth / cameraVideo.videoWidth, stageHeight / cameraVideo.videoHeight);
+  const renderedWidth = cameraVideo.videoWidth * fitScale;
+  const renderedHeight = cameraVideo.videoHeight * fitScale;
+  const offsetX = (stageWidth - renderedWidth) / 2;
+  const offsetY = (stageHeight - renderedHeight) / 2;
+  const points = ['tl', 'tr', 'br', 'bl'].map(name => ({
+    x: detection.corners[name].x / probeWidth * renderedWidth + offsetX,
+    y: detection.corners[name].y / probeHeight * renderedHeight + offsetY,
+  }));
   context.save();
   context.strokeStyle = '#76e0ad';
   context.lineWidth = Math.max(3, stageWidth / 260);
