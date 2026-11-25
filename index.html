@@ -34,7 +34,7 @@ button, input { font: inherit; }
 button { color: inherit; }
 .shell { width: min(100% - 40px, 1050px); margin-inline: auto; }
 .topbar { height: 74px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
-.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-size: 22px; font-weight: 850; letter-spacing: -.7px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-size: 22px; font-weight: 850; }
 .brand-dot { color: var(--green); }
 .brand-mark, .howto-mark { display: grid; grid-template-columns: repeat(2, 7px); grid-template-rows: repeat(2, 7px); gap: 3px; padding: 5px; border: 1.5px solid var(--green); border-radius: 5px; transform: rotate(-8deg); }
 .brand-mark i { width: 7px; height: 7px; background: var(--green); border-radius: 1px; }
@@ -43,9 +43,9 @@ button { color: inherit; }
 .privacy-dot, .live-dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: #27a581; box-shadow: 0 0 0 3px #27a58120; }
 main { padding-bottom: 30px; }
 .intro { padding: 58px 2px 31px; max-width: 670px; }
-.eyebrow { display: flex; align-items: center; gap: 9px; color: var(--green); font-size: 12px; font-weight: 780; letter-spacing: .02em; }
+.eyebrow { display: flex; align-items: center; gap: 9px; color: var(--green); font-size: 12px; font-weight: 780; }
 .eyebrow-line { width: 19px; height: 2px; background: var(--green); border-radius: 2px; }
-h1 { margin: 14px 0 12px; font-size: clamp(38px, 6vw, 60px); line-height: 1.19; letter-spacing: -1.8px; font-weight: 830; }
+h1 { margin: 14px 0 12px; font-size: clamp(38px, 6vw, 60px); line-height: 1.19; font-weight: 830; }
 h1 em { color: var(--green); font-style: normal; }
 .intro > p { max-width: 560px; margin: 0; color: var(--muted); font-size: 16px; line-height: 1.9; }
 .privacy-note { display: flex; gap: 10px; align-items: flex-start; margin-top: 19px; padding: 12px 15px; width: fit-content; max-width: 100%; color: #426057; background: var(--green-wash); border-radius: 11px; font-size: 12px; line-height: 1.8; }
@@ -55,7 +55,7 @@ h1 em { color: var(--green); font-style: normal; }
 .panel-heading { display: flex; align-items: center; gap: 13px; margin-bottom: 20px; }
 .step-number { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; color: var(--green); background: var(--green-wash); border-radius: 11px; font-weight: 800; font-size: 15px; }
 .heading-copy { flex: 1; }
-.heading-copy h2, .results-heading h2 { margin: 0; font-size: 18px; font-weight: 780; letter-spacing: -.3px; }
+.heading-copy h2, .results-heading h2 { margin: 0; font-size: 18px; font-weight: 780; }
 .heading-copy p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
 .key-progress { color: var(--muted); font-size: 13px; white-space: nowrap; }
 .key-progress strong { color: var(--green); font-size: 20px; }
@@ -64,7 +64,7 @@ h1 em { color: var(--green); font-style: normal; }
 .key-item.is-set { background: #f7fbf8; border-color: #d2e7dc; }
 .question-number { width: 25px; height: 25px; flex: 0 0 25px; display: grid; place-items: center; color: #76827c; background: var(--surface-soft); border-radius: 8px; font-size: 11px; font-weight: 750; }
 .option-set { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 3px; flex: 1; }
-.option-choice { width: 29px; height: 29px; padding: 0; display: grid; place-items: center; border: 1px solid transparent; border-radius: 9px; background: transparent; color: #6c7771; cursor: pointer; font-size: 12px; font-weight: 700; transition: .16s ease; -webkit-tap-highlight-color: transparent; }
+.option-choice { flex: 1 1 0; max-width: 32px; min-width: 0; height: 29px; padding: 0; display: grid; place-items: center; border: 1px solid transparent; border-radius: 9px; background: transparent; color: #6c7771; cursor: pointer; font-size: 12px; font-weight: 700; transition: .16s ease; -webkit-tap-highlight-color: transparent; }
 .option-choice:hover { background: var(--surface-soft); }
 .option-choice[aria-checked="true"] { color: #fff; background: var(--green); border-color: var(--green); box-shadow: 0 2px 6px #11746335; }
 .key-footer { min-height: 32px; display: flex; align-items: end; justify-content: space-between; gap: 10px; margin-top: 14px; }
@@ -109,7 +109,7 @@ h1 em { color: var(--green); font-style: normal; }
 .score-wrap { position: relative; width: 88px; height: 88px; flex: 0 0 88px; display: grid; place-content: center; text-align: center; border-radius: 50%; background: conic-gradient(var(--green) var(--score-angle), #edf1ed 0); }
 .score-wrap::before { position: absolute; inset: 6px; content: ""; background: var(--surface); border-radius: inherit; }
 .score-main, .score-denom { position: relative; z-index: 1; line-height: 1.15; }
-.score-main { color: var(--green-dark); font-size: 25px; font-weight: 820; letter-spacing: -1px; }
+.score-main { color: var(--green-dark); font-size: 25px; font-weight: 820; }
 .score-denom { color: var(--muted); font-size: 10px; }
 .result-copy { min-width: 0; flex: 1; }
 .result-copy h3 { margin: 0 0 5px; font-size: 15px; font-weight: 760; }
@@ -170,14 +170,14 @@ h1 em { color: var(--green); font-style: normal; }
   .brand { font-size: 20px; }
   .privacy-chip { font-size: 10px; padding: 8px 10px; }
   .intro { padding: 38px 1px 22px; }
-  h1 { font-size: 41px; letter-spacing: -1.1px; }
+  h1 { font-size: 41px; }
   .intro > p { font-size: 14px; }
   .panel { padding: 20px 15px; border-radius: 18px; margin-top: 13px; }
   .panel-heading { margin-bottom: 16px; }
   .key-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
   .key-item { padding: 6px; gap: 5px; }
   .question-number { width: 23px; height: 23px; flex-basis: 23px; }
-  .option-choice { width: 26px; height: 27px; font-size: 11px; }
+  .option-choice { height: 27px; font-size: 11px; }
   .scan-actions { gap: 8px; }
   .button { padding-inline: 9px; font-size: 12px; }
   .result-top { padding: 16px 15px 13px; gap: 12px; }
@@ -191,7 +191,26 @@ h1 em { color: var(--green); font-style: normal; }
   .result-actions { padding-inline: 11px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+.form-builder-controls { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin-bottom: 16px; }
+.builder-field { min-width: 0; display: grid; gap: 6px; color: var(--muted); font-size: 11px; font-weight: 680; }
+.builder-field input, .builder-field select { width: 100%; min-height: 42px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: #fff; font-size: 13px; }
+.builder-field :focus { outline: 2px solid #8cc4ad; outline-offset: 1px; }
+.builder-note { margin: -5px 0 14px; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.sheet-preview-wrap { display: flex; justify-content: center; padding: 11px; background: #f3f5f2; border: 1px solid var(--line); border-radius: 13px; }
+#formPreview { display: block; width: min(100%, 440px); height: auto; background: #fff; box-shadow: 0 3px 15px #14231d1b; }
+.builder-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
+.builder-hint { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.builder-hint.is-warning { color: var(--amber); }
+@media (max-width: 520px) {
+  .form-builder-controls { gap: 7px; }
+  .builder-field { font-size: 10px; }
+  .builder-field input, .builder-field select { padding-inline: 6px; font-size: 12px; }
+  .builder-footer { align-items: stretch; flex-direction: column; }
+  .builder-footer .button { width: 100%; }
+}
 
+.key-grid[data-options="5"], .key-grid[data-options="6"] { grid-template-columns: 1fr; }
+@media (min-width: 760px) { .key-grid[data-options="5"], .key-grid[data-options="6"] { grid-template-columns: repeat(3,minmax(0,1fr)); } }
 </style>
 </head>
 <body>
@@ -212,9 +231,32 @@ h1 em { color: var(--green); font-style: normal; }
         <div class="privacy-note"><span class="lock-icon" aria-hidden="true">●</span><span><strong>كل شيء يبقى على جهازك.</strong> لا رفع للصور، لا حسابات، ولا حفظ بعد إغلاق الصفحة.</span></div>
       </section>
 
-      <section class="panel key-panel" aria-labelledby="key-title">
+      <section class="panel form-builder-panel" aria-labelledby="form-builder-title">
         <div class="panel-heading">
           <div class="step-number">١</div>
+          <div class="heading-copy">
+            <h2 id="form-builder-title">إنشاء نموذج إجابة</h2>
+            <p>اختر عدد الأسئلة والأعمدة والخيارات، ثم نزّل الورقة للطباعة.</p>
+          </div>
+        </div>
+        <div class="form-builder-controls">
+          <label class="builder-field" for="questionCount"><span>عدد الأسئلة</span><input id="questionCount" type="number" min="1" max="100" step="1" value="12" inputmode="numeric" /></label>
+          <label class="builder-field" for="columnCount"><span>عدد الأعمدة</span><select id="columnCount"><option value="1" selected>عمود واحد</option><option value="2">عمودان</option><option value="3">٣ أعمدة</option><option value="4">٤ أعمدة</option></select></label>
+          <label class="builder-field" for="optionCount"><span>الخيارات لكل سؤال</span><select id="optionCount"><option value="2">خياران</option><option value="3">٣ خيارات</option><option value="4" selected>٤ خيارات</option><option value="5">٥ خيارات</option><option value="6">٦ خيارات</option></select></label>
+        </div>
+        <p class="builder-note">قبل التصحيح، اختر نفس الأعداد المطبوعة على الورقة. لا تُحفظ الإعدادات بعد إغلاق التطبيق.</p>
+        <div class="sheet-preview-wrap">
+          <canvas id="formPreview" width="900" height="1273" aria-label="معاينة ورقة الإجابة القابلة للطباعة"></canvas>
+        </div>
+        <div class="builder-footer">
+          <p id="builderHint" class="builder-hint">إعداداتك الحالية تطابق مفتاح الإجابة أدناه.</p>
+          <button id="downloadForm" class="button button-primary" type="button"><span class="button-icon" aria-hidden="true">↓</span> تنزيل الورقة PNG</button>
+        </div>
+      </section>
+
+      <section class="panel key-panel" aria-labelledby="key-title">
+        <div class="panel-heading">
+          <div class="step-number">٢</div>
           <div class="heading-copy">
             <h2 id="key-title">نموذج الإجابة</h2>
             <p>اختر الإجابة الصحيحة لكل سؤال.</p>
@@ -230,7 +272,7 @@ h1 em { color: var(--green); font-style: normal; }
 
       <section class="panel scan-panel" aria-labelledby="scan-title">
         <div class="panel-heading">
-          <div class="step-number">٢</div>
+          <div class="step-number">٣</div>
           <div class="heading-copy">
             <h2 id="scan-title">صوّر كرت الإجابة</h2>
             <p>اجعل العلامات السوداء الأربع واضحة داخل الإطار.</p>
@@ -277,7 +319,7 @@ h1 em { color: var(--green); font-style: normal; }
         <div class="howto-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
         <div>
           <h2 id="howto-title">لأفضل نتيجة</h2>
-          <p>صوّر الورقة من الأعلى، بإضاءة جيدة، وضعها كاملة داخل الصورة. تأكد من ظهور العلامات السوداء الثماني حول الحواف.</p>
+          <p>صوّر الورقة من الأعلى، بإضاءة جيدة، وضعها كاملة داخل الصورة. تأكد من ظهور العلامات السوداء الأربع حول الحواف.</p>
         </div>
       </section>
     </main>
@@ -286,9 +328,9 @@ h1 em { color: var(--green); font-style: normal; }
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script>
-const ANSWERS = ['أ', 'ب', 'ج', 'د'];
+const ANSWERS = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
 const PAGE_W = 900;
-const PAGE_H = Math.round(PAGE_W * 871 / 620);
+const PAGE_H = Math.round(PAGE_W * 1273 / 900);
 const OPTION_X = [0.5856, 0.4604, 0.3369, 0.2126];
 const ROW_Y = [0.1984, 0.2606, 0.3224, 0.3846, 0.4468, 0.5096, 0.5718, 0.6346, 0.6968, 0.7596, 0.8218, 0.8817];
 const GRID_X = [0.150, 0.274, 0.398, 0.523, 0.646, 0.857];
@@ -301,12 +343,22 @@ const MARK_TARGETS = {
 };
 
 function detectFiducials(imageData, width, height) {
+  let first;
+  for (const limit of [105, 85, 130, 155]) {
+    const found = detectFiducialsAt(imageData, width, height, limit);
+    if (found.ok) return found;
+    first = first || found;
+  }
+  return first;
+}
+
+function detectFiducialsAt(imageData, width, height, darkLimit) {
   const length = width * height;
   if (length < 100) return { ok: false, reason: 'الصورة صغيرة جدًا.' };
   const rgba = imageData.data;
   const foreground = new Uint8Array(length);
   for (let i = 0, p = 0; i < length; i++, p += 4) {
-    foreground[i] = (rgba[p] * 0.299 + rgba[p + 1] * 0.587 + rgba[p + 2] * 0.114) < 105 ? 1 : 0;
+    foreground[i] = (rgba[p] * 0.299 + rgba[p + 1] * 0.587 + rgba[p + 2] * 0.114) < darkLimit ? 1 : 0;
   }
   const visited = new Uint8Array(length);
   const queue = new Int32Array(length);
@@ -452,28 +504,27 @@ function invert3(m) {
 }
 
 function warpPerspective(sourceData, sourceW, sourceH, corners) {
-  const destinationW = PAGE_W;
-  const destinationH = PAGE_H;
   const src = ['tl', 'tr', 'bl', 'br'].map(name => [corners[name].x, corners[name].y]);
   const dst = ['tl', 'tr', 'bl', 'br'].map(name => MARK_TARGETS[name]);
-  const forward = homographyFromFourPoints(src, dst);
-  const inverse = invert3(forward);
-  const output = new ImageData(destinationW, destinationH);
+  const inverse = invert3(homographyFromFourPoints(src, dst));
+  const output = new ImageData(PAGE_W, PAGE_H);
   const inData = sourceData.data;
   const outData = output.data;
-  for (let y = 0; y < destinationH; y++) {
-    for (let x = 0; x < destinationW; x++) {
+  outData.fill(255);
+  for (let y = 0; y < PAGE_H; y++) {
+    for (let x = 0; x < PAGE_W; x++) {
       const denom = inverse[6] * x + inverse[7] * y + inverse[8];
       if (Math.abs(denom) < 1e-10) continue;
       const sx = (inverse[0] * x + inverse[1] * y + inverse[2]) / denom;
       const sy = (inverse[3] * x + inverse[4] * y + inverse[5]) / denom;
-      if (sx < 0 || sy < 0 || sx >= sourceW || sy >= sourceH) continue;
-      const sourceIndex = ((Math.round(sy) * sourceW + Math.round(sx)) * 4);
-      const outputIndex = ((y * destinationW + x) * 4);
-      outData[outputIndex] = inData[sourceIndex];
-      outData[outputIndex + 1] = inData[sourceIndex + 1];
-      outData[outputIndex + 2] = inData[sourceIndex + 2];
-      outData[outputIndex + 3] = 255;
+      const x0 = Math.floor(sx), y0 = Math.floor(sy);
+      if (x0 < 0 || y0 < 0 || x0 + 1 >= sourceW || y0 + 1 >= sourceH) continue;
+      const fx = sx - x0, fy = sy - y0;
+      const i00 = (y0 * sourceW + x0) * 4, i01 = i00 + sourceW * 4;
+      const o = (y * PAGE_W + x) * 4;
+      for (let c = 0; c < 3; c++) {
+        outData[o + c] = inData[i00 + c] * (1 - fx) * (1 - fy) + inData[i00 + 4 + c] * fx * (1 - fy) + inData[i01 + c] * (1 - fx) * fy + inData[i01 + 4 + c] * fx * fy;
+      }
     }
   }
   return output;
@@ -556,30 +607,81 @@ function refineGrid(rectified) {
   return { calibrated: true, optionX, rowY };
 }
 
-function sampleBubbles(rectified, grid) {
-  const threshold = otsuThreshold(rectified);
-  const pixels = rectified.data;
-  const radius = Math.round(PAGE_W * 0.0146);
-  const diskOffsets = [];
-  const paperOffsets = [];
-  const r2 = radius * radius;
-  for (let dy = -Math.round(radius * 1.65); dy <= Math.round(radius * 1.65); dy++) {
-    for (let dx = -Math.round(radius * 1.65); dx <= Math.round(radius * 1.65); dx++) {
-      const distance = dx * dx + dy * dy;
-      if (distance <= r2) diskOffsets.push([dx, dy]);
-      else if (distance >= (radius * 1.2) ** 2 && distance <= (radius * 1.65) ** 2) paperOffsets.push([dx, dy]);
+function getQuestionLayout(format = {}) {
+  const questionCount = Math.max(1, Math.min(100, Math.round(Number(format.questionCount) || 12)));
+  const requestedColumns = Math.max(1, Math.min(4, Math.round(Number(format.columns) || 1)));
+  const optionCount = Math.max(2, Math.min(6, Math.round(Number(format.optionCount) || 4)));
+  const legacy = questionCount === 12 && requestedColumns === 1 && optionCount === 4;
+  const columns = Math.min(requestedColumns, questionCount);
+  if (legacy) {
+    return {
+      questionCount, columns, optionCount, legacy: true, rowsPerColumn: 12, gridX: GRID_X, gridY: GRID_Y,
+      questions: ROW_Y.map((y, index) => ({
+        question: index,
+        column: 0,
+        row: index,
+        y,
+        xs: OPTION_X,
+        radius: 13,
+        drawRadius: 24,
+        questionX: 0.75,
+      })),
+    };
+  }
+
+  const gutter = 22, margin = 60, headerH = 38, top = 150;
+  const qw = questionCount > 99 ? 52 : 42;
+  const rowsMax = Math.ceil(questionCount / columns);
+  const cellW = Math.floor(Math.min(76, ((PAGE_W - margin * 2 - (columns - 1) * gutter) / columns - qw) / optionCount));
+  const rowH = Math.min(62, (PAGE_H - 80 - top - headerH) / rowsMax);
+  const drawRadius = Math.max(3, Math.min(cellW * 0.39, rowH * 0.37, 22));
+  const colW = qw + optionCount * cellW;
+  const totalW = columns * colW + (columns - 1) * gutter;
+  const startX = (PAGE_W - totalW) / 2;
+  const base = Math.floor(questionCount / columns), extra = questionCount % columns;
+  const questions = [], cols = [];
+  let index = 0;
+  for (let column = 0; column < columns; column++) {
+    const rows = base + (column < extra ? 1 : 0);
+    const right = startX + totalW - column * (colW + gutter);
+    cols.push({ left: right - colW, right, rows });
+    for (let row = 0; row < rows; row++, index++) {
+      questions.push({
+        question: index, column, row, drawRadius,
+        y: (top + headerH + (row + 0.5) * rowH) / PAGE_H,
+        radius: Math.max(3, drawRadius * 0.54),
+        questionX: (right - qw / 2) / PAGE_W,
+        xs: Array.from({ length: optionCount }, (_, o) => (right - qw - (o + 0.5) * cellW) / PAGE_W),
+      });
     }
   }
+  return { questionCount, columns, requestedColumns, optionCount, legacy: false, rowsMax, cellW, rowH, drawRadius, qw, top, headerH, cols, questions };
+}
+
+function sampleBubbles(rectified, questions) {
+  const threshold = otsuThreshold(rectified);
+  const pixels = rectified.data;
   const grayAt = (cx, cy, dx, dy) => {
     const p = ((cy + dy) * PAGE_W + cx + dx) * 4;
     return pixels[p] * 0.299 + pixels[p + 1] * 0.587 + pixels[p + 2] * 0.114;
   };
   const scores = [];
-  for (const yRatio of grid.rowY) {
+  for (const question of questions) {
     const row = [];
-    for (const xRatio of grid.optionX) {
+    const radius = Math.max(3, Math.round(question.radius));
+    const diskOffsets = [];
+    const paperOffsets = [];
+    const r2 = radius * radius;
+    for (let dy = -Math.round(radius * 1.65); dy <= Math.round(radius * 1.65); dy++) {
+      for (let dx = -Math.round(radius * 1.65); dx <= Math.round(radius * 1.65); dx++) {
+        const distance = dx * dx + dy * dy;
+        if (distance <= r2) diskOffsets.push([dx, dy]);
+        else if (distance >= (radius * 1.2) ** 2 && distance <= (radius * 1.65) ** 2) paperOffsets.push([dx, dy]);
+      }
+    }
+    const cy = Math.round(PAGE_H * question.y);
+    for (const xRatio of question.xs) {
       const cx = Math.round(PAGE_W * xRatio);
-      const cy = Math.round(PAGE_H * yRatio);
       const paper = paperOffsets.map(([dx, dy]) => grayAt(cx, cy, dx, dy)).sort((a, b) => a - b);
       const paperLevel = paper[Math.floor(paper.length * 0.6)] ?? 245;
       const softThreshold = Math.max(90, paperLevel - 12);
@@ -626,14 +728,15 @@ function makePreview(rectified) {
   return canvas.toDataURL('image/jpeg', 0.72);
 }
 
-async function processImageSource(source) {
+async function processImageSource(source, format = {}) {
   let bitmap;
   if (source instanceof HTMLCanvasElement) {
     bitmap = source;
   } else {
     bitmap = await createImageBitmap(source, { imageOrientation: 'from-image' }).catch(() => createImageBitmap(source));
   }
-  const scale = Math.min(1, 1200 / Math.max(bitmap.width, bitmap.height));
+  const isBitmap = !(source instanceof HTMLCanvasElement);
+  const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
   const width = Math.max(1, Math.round(bitmap.width * scale));
   const height = Math.max(1, Math.round(bitmap.height * scale));
   const canvas = document.createElement('canvas');
@@ -641,27 +744,50 @@ async function processImageSource(source) {
   canvas.height = height;
   const context = canvas.getContext('2d', { willReadFrequently: true });
   context.drawImage(bitmap, 0, 0, width, height);
+  if (isBitmap && bitmap.close) bitmap.close();
   const sourceImage = context.getImageData(0, 0, width, height);
   const detection = detectFiducials(sourceImage, width, height);
   if (!detection.ok) throw new Error(detection.reason);
   const rectified = warpPerspective(sourceImage, width, height, detection.corners);
-  const grid = refineGrid(rectified);
-  const scores = sampleBubbles(rectified, grid);
+  const layout = getQuestionLayout(format);
+  let questions = layout.questions;
+  let gridCalibrated = true;
+  if (layout.legacy) {
+    const grid = refineGrid(rectified);
+    gridCalibrated = grid.calibrated;
+    if (grid.calibrated) questions = questions.map((question, index) => ({ ...question, y: grid.rowY[index], xs: grid.optionX }));
+  }
+  const scores = sampleBubbles(rectified, questions);
   return {
     answers: classifyRows(scores),
     preview: makePreview(rectified),
     markerCount: detection.candidates.length,
-    gridCalibrated: grid.calibrated,
+    gridCalibrated,
+    layoutType: layout.legacy ? 'legacy' : 'configured',
     dimensions: { width, height },
   };
 }
 
 function gradeAnswers(scannedAnswers, answerKey) {
+  let correct = 0, wrong = 0, blank = 0, review = 0;
+  const total = answerKey.length;
+  for (let i = 0; i < total; i++) {
+    const row = scannedAnswers[i];
+    if (row?.requiresReview) review++;
+    else if (row?.answer === null || row?.answer === undefined) blank++;
+    else if (row.answer === answerKey[i]) correct++;
+    else wrong++;
+  }
+  return { correct, answered: correct + wrong, review, blank, total, wrong };
+}
+
+function gradeAnswersOld(scannedAnswers, answerKey) {
   let correct = 0;
   let answered = 0;
   let review = 0;
   let blank = 0;
-  for (let i = 0; i < 12; i++) {
+  const total = answerKey.length;
+  for (let i = 0; i < total; i++) {
     const row = scannedAnswers[i];
     if (row?.requiresReview) review++;
     if (row?.answer === null || row?.answer === undefined) {
@@ -671,16 +797,17 @@ function gradeAnswers(scannedAnswers, answerKey) {
       if (row.answer === answerKey[i]) correct++;
     }
   }
-  return { correct, answered, review, blank, total: 12, wrong: Math.max(0, answered - correct) };
+  return { correct, answered, review, blank, total, wrong: Math.max(0, answered - correct) };
 }
 
 function optionLabel(index) {
   return ANSWERS[index] ?? '—';
 }
 
-const letters = ['أ', 'ب', 'ج', 'د'];
+const letters = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
 const arabicNumber = new Intl.NumberFormat('ar-EG', { useGrouping: false });
-const answerKey = Array(12).fill(null);
+let formFormat = { questionCount: 12, columns: 1, optionCount: 4 };
+const answerKey = Array(formFormat.questionCount).fill(null);
 const results = [];
 let nextResultId = 1;
 let activeStream = null;
@@ -709,10 +836,17 @@ const scanMessage = document.getElementById('scanMessage');
 const resultsSection = document.getElementById('resultsSection');
 const resultsList = document.getElementById('resultsList');
 const toastEl = document.getElementById('toast');
+const questionCountInput = document.getElementById('questionCount');
+const columnCountInput = document.getElementById('columnCount');
+const optionCountInput = document.getElementById('optionCount');
+const formPreview = document.getElementById('formPreview');
+const builderHint = document.getElementById('builderHint');
+const downloadFormButton = document.getElementById('downloadForm');
 
 function renderKey() {
   answerKeyEl.innerHTML = '';
-  for (let question = 0; question < 12; question++) {
+  answerKeyEl.dataset.options = String(formFormat.optionCount);
+  for (let question = 0; question < formFormat.questionCount; question++) {
     const item = document.createElement('div');
     item.className = `key-item${answerKey[question] === null ? '' : ' is-set'}`;
     const number = document.createElement('span');
@@ -723,7 +857,7 @@ function renderKey() {
     choices.className = 'option-set';
     choices.setAttribute('role', 'radiogroup');
     choices.setAttribute('aria-label', `السؤال ${arabicNumber.format(question + 1)}`);
-    letters.forEach((letter, answer) => {
+    letters.slice(0, formFormat.optionCount).forEach((letter, answer) => {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'option-choice';
@@ -750,7 +884,9 @@ function renderKey() {
 function updateKeyState(rerenderResults = true) {
   const filled = answerKey.filter(answer => answer !== null).length;
   keyProgressEl.textContent = arabicNumber.format(filled);
-  const complete = filled === 12;
+  keyProgressEl.nextElementSibling.textContent = ` / ${arabicNumber.format(formFormat.questionCount)}`;
+  answerKeyEl.setAttribute('aria-label', `مفتاح الإجابة، ${arabicNumber.format(formFormat.questionCount)} سؤالًا`);
+  const complete = filled === formFormat.questionCount;
   keyHintEl.textContent = complete ? 'المفتاح مكتمل — جاهز للتصحيح.' : 'اختر الإجابة الصحيحة لكل الأسئلة لإكمال المفتاح.';
   keyHintEl.classList.toggle('is-complete', complete);
   keyGateEl.hidden = complete;
@@ -759,6 +895,144 @@ function updateKeyState(rerenderResults = true) {
   fileButton.classList.toggle('is-disabled', !complete || busy);
   fileButton.setAttribute('aria-disabled', String(!complete || busy));
   if (rerenderResults && results.length) renderResults();
+}
+
+function drawAnswerSheet(canvas, scale = 1) {
+  const width = 900;
+  const height = 1273;
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+  const context = canvas.getContext('2d');
+  context.setTransform(scale, 0, 0, scale, 0, 0);
+  context.fillStyle = '#fff';
+  context.fillRect(0, 0, width, height);
+  context.fillStyle = '#111';
+  context.strokeStyle = '#171a18';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.direction = 'rtl';
+  context.font = 'bold 26px Tahoma, Arial, sans-serif';
+  context.fillText('نموذج الإجابة', width / 2, 65);
+  context.font = '16px Tahoma, Arial, sans-serif';
+  const colsText = n => n === 1 ? 'عمود واحد' : n === 2 ? 'عمودان' : `${arabicNumber.format(n)} أعمدة`;
+  const optsText = n => n === 2 ? 'خياران' : `${arabicNumber.format(n)} خيارات`;
+  context.fillText(`${arabicNumber.format(formFormat.questionCount)} سؤالًا  ·  ${colsText(formFormat.columns)}  ·  ${optsText(formFormat.optionCount)}`, width / 2, 102);
+
+  const layout = getQuestionLayout(formFormat);
+  context.lineWidth = layout.legacy ? 2.2 : 1.6;
+  if (layout.legacy) {
+    layout.gridX.forEach(x => {
+      context.beginPath(); context.moveTo(x * width, layout.gridY[0] * height); context.lineTo(x * width, layout.gridY.at(-1) * height); context.stroke();
+    });
+    layout.gridY.forEach(y => {
+      context.beginPath(); context.moveTo(layout.gridX[0] * width, y * height); context.lineTo(layout.gridX.at(-1) * width, y * height); context.stroke();
+    });
+    context.font = 'bold 24px Tahoma, Arial, sans-serif';
+    context.fillText('السؤال', 0.75 * width, (layout.gridY[0] + layout.gridY[1]) * height / 2);
+    layout.questions.forEach((question, index) => {
+      const y = question.y * height;
+      context.font = 'bold 30px Tahoma, Arial, sans-serif';
+      context.fillText(arabicNumber.format(index + 1), question.questionX * width, y);
+      question.xs.forEach((x, option) => {
+        if (index === 0) {
+          context.font = 'bold 17px Tahoma, Arial, sans-serif';
+          context.fillText(letters[option], x * width, (layout.gridY[0] + layout.gridY[1]) * height / 2);
+        }
+        context.beginPath();
+        context.arc(x * width, y, 24, 0, Math.PI * 2);
+        context.lineWidth = 4;
+        context.stroke();
+      });
+    });
+  } else {
+    const { top, headerH, rowH, qw, cellW, drawRadius, optionCount } = layout;
+    layout.cols.forEach(col => {
+      const bottom = top + headerH + col.rows * rowH;
+      context.lineWidth = 2;
+      for (let k = -1; k <= optionCount; k++) {
+        const x = k < 0 ? col.right : col.right - qw - k * cellW;
+        context.beginPath(); context.moveTo(x, top); context.lineTo(x, bottom); context.stroke();
+      }
+      for (let r = -1; r <= col.rows; r++) {
+        const y = r < 0 ? top : top + headerH + r * rowH;
+        context.beginPath(); context.moveTo(col.left, y); context.lineTo(col.right, y); context.stroke();
+      }
+      context.font = 'bold 14px Tahoma, Arial, sans-serif';
+      context.fillText('السؤال', col.right - qw / 2, top + headerH / 2);
+      context.font = 'bold 16px Tahoma, Arial, sans-serif';
+      for (let o = 0; o < optionCount; o++) context.fillText(letters[o], col.right - qw - (o + 0.5) * cellW, top + headerH / 2);
+    });
+    context.font = `bold ${Math.round(Math.min(26, rowH * 0.45))}px Tahoma, Arial, sans-serif`;
+    context.lineWidth = Math.max(1.5, Math.min(3.5, drawRadius / 6));
+    layout.questions.forEach(question => {
+      const y = question.y * height;
+      context.fillText(arabicNumber.format(question.question + 1), question.questionX * width, y);
+      question.xs.forEach(cx => { context.beginPath(); context.arc(cx * width, y, drawRadius, 0, Math.PI * 2); context.stroke(); });
+    });
+  }
+
+  const markerSize = 36;
+  for (const [xRatio, yRatio] of [[0.026, 0.018], [0.974, 0.018], [0.026, 0.982], [0.974, 0.982]]) {
+    context.fillRect(xRatio * width - markerSize / 2, yRatio * height - markerSize / 2, markerSize, markerSize);
+  }
+}
+
+function updateBuilderFormat() {
+  if (busy) return;
+  const questionCount = Number(questionCountInput.value);
+  if (!Number.isInteger(questionCount) || questionCount < 1 || questionCount > 100) {
+    builderHint.textContent = 'اختر عددًا صحيحًا من ١ إلى ١٠٠ سؤالًا.';
+    builderHint.classList.add('is-warning');
+    return;
+  }
+  const nextFormat = {
+    questionCount,
+    columns: Number(columnCountInput.value),
+    optionCount: Number(optionCountInput.value),
+  };
+  const changed = Object.keys(nextFormat).some(key => nextFormat[key] !== formFormat[key]);
+  if (changed) {
+    const oldKey = [...answerKey];
+    stopCamera();
+    formFormat = nextFormat;
+    answerKey.splice(0, answerKey.length, ...Array.from({ length: nextFormat.questionCount }, (_, i) => oldKey[i] != null && oldKey[i] < nextFormat.optionCount ? oldKey[i] : null));
+    renderKey();
+    const incomplete = answerKey.includes(null);
+    builderHint.textContent = incomplete ? 'تم تحديث النموذج. أكمل الإجابات الناقصة في المفتاح.' : 'تم تحديث تخطيط الورقة، والمفتاح كما هو.';
+    builderHint.classList.toggle('is-warning', incomplete);
+  } else {
+    builderHint.textContent = 'إعداداتك الحالية تطابق مفتاح الإجابة أدناه.';
+    builderHint.classList.remove('is-warning');
+  }
+  drawAnswerSheet(formPreview);
+  const layout = getQuestionLayout(formFormat);
+  if (!layout.legacy) {
+    const mm = layout.drawRadius * 2 * 210 / PAGE_W;
+    if (mm < 4) {
+      builderHint.textContent = `الفقاعات صغيرة (${arabicNumber.format(Math.round(mm * 10) / 10)} مم)؛ زد عدد الأعمدة أو قلّل الخيارات لسهولة التظليل والقراءة.`;
+      builderHint.classList.add('is-warning');
+    } else if (layout.columns < layout.requestedColumns) {
+      builderHint.textContent = `عدد الأسئلة قليل، فاستُخدمت ${arabicNumber.format(layout.columns)} أعمدة فقط.`;
+      builderHint.classList.add('is-warning');
+    }
+  }
+}
+
+async function downloadAnswerSheet() {
+  const output = document.createElement('canvas');
+  drawAnswerSheet(output, 2);
+  const blob = await new Promise(resolve => output.toBlob(resolve, 'image/png'));
+  if (!blob) {
+    showToast('تعذر إنشاء الصورة. حاول مرة أخرى.');
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `answer-sheet-${formFormat.questionCount}q-${formFormat.columns}col-${formFormat.optionCount}opt.png`;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('تم تنزيل ورقة الإجابة كصورة PNG.');
 }
 
 function showMessage(text, kind = 'info') {
@@ -781,6 +1055,10 @@ function showToast(text) {
 
 function setBusy(value) {
   busy = value;
+  questionCountInput.disabled = value;
+  columnCountInput.disabled = value;
+  optionCountInput.disabled = value;
+  downloadFormButton.disabled = value;
   cameraButton.disabled = value || answerKey.some(answer => answer === null);
   imageInput.disabled = value || answerKey.some(answer => answer === null);
   fileButton.classList.toggle('is-disabled', value || answerKey.some(answer => answer === null));
@@ -933,20 +1211,24 @@ async function processSource(source) {
     showMessage('أكمل نموذج الإجابة أولًا، ثم التقط الورقة من جديد.', 'error');
     return;
   }
+  const scanFormat = { ...formFormat };
+  const scanAnswerKey = [...answerKey];
   setBusy(true);
   showMessage('نحلّل الصورة داخل جهازك ونبحث عن العلامات…', 'info');
   try {
-    const result = await processImageSource(source);
+    const result = await processImageSource(source, scanFormat);
     const answers = result.answers.map(row => ({
       ...row,
       requiresReview: row.status === 'review' || row.status === 'ambiguous',
     }));
-    results.unshift({ id: nextResultId++, answers, preview: result.preview, answerKey: [...answerKey] });
+    results.unshift({ id: nextResultId++, answers, preview: result.preview, answerKey: scanAnswerKey, format: scanFormat });
     renderResults();
-    showMessage(result.gridCalibrated
-      ? 'تم التعرف على خطوط الجدول وضبط مراكز الفقاعات. راجع أي إجابة مميّزة قبل اعتماد الدرجة.'
-      : 'قُوّمت الورقة، واستخدمنا مواضع القالب الأساسية. لتحسين الدقة، أعد التصوير مع وضوح خطوط الجدول.'
-    , result.gridCalibrated ? 'success' : 'info');
+    const message = result.layoutType === 'configured'
+      ? 'تمت قراءة الورقة حسب إعداد النموذج الحالي. راجع أي إجابة مميّزة قبل اعتماد الدرجة.'
+      : result.gridCalibrated
+        ? 'تم التعرف على خطوط الجدول وضبط مراكز الفقاعات. راجع أي إجابة مميّزة قبل اعتماد الدرجة.'
+        : 'قُوّمت الورقة، واستخدمنا مواضع القالب الأساسية. لتحسين الدقة، أعد التصوير مع وضوح خطوط الجدول.';
+    showMessage(message, result.gridCalibrated ? 'success' : 'info');
     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
     showMessage(error?.message || 'تعذرت قراءة الصورة. تأكد من وضوح العلامات وجرب صورة أخرى.', 'error');
@@ -971,15 +1253,15 @@ async function processFiles(files) {
 
 function createAnswerCell(result, row, index, key) {
   const cell = document.createElement('div');
-  const isCorrect = row.answer !== null && row.answer === key[index];
-  const isWrong = row.answer !== null && row.answer !== key[index];
+  const isCorrect = !row.requiresReview && row.answer !== null && row.answer === key[index];
+  const isWrong = !row.requiresReview && row.answer !== null && row.answer !== key[index];
   cell.className = `answer-cell${row.requiresReview ? ' needs-review' : ''}${isCorrect ? ' is-right' : ''}${isWrong ? ' is-wrong' : ''}${row.answer === null ? ' is-blank' : ''}`;
   const question = document.createElement('span');
   question.className = 'answer-q';
   question.textContent = arabicNumber.format(index + 1);
   const letter = document.createElement('span');
   letter.className = 'answer-letter';
-  letter.textContent = row.requiresReview ? '؟' : optionLabel(row.answer);
+  letter.textContent = row.requiresReview ? (row.answer === null ? '؟' : optionLabel(row.answer) + '؟') : optionLabel(row.answer);
   const select = document.createElement('select');
   select.className = 'answer-select';
   select.setAttribute('aria-label', `مراجعة إجابة السؤال ${arabicNumber.format(index + 1)}`);
@@ -988,13 +1270,20 @@ function createAnswerCell(result, row, index, key) {
   const blank = document.createElement('option');
   blank.value = '';
   blank.textContent = '—';
-  blank.selected = row.answer === null;
+  blank.selected = !row.requiresReview && row.answer === null;
+  if (row.requiresReview) {
+    const pending = document.createElement('option');
+    pending.value = '?';
+    pending.textContent = '؟';
+    pending.selected = true;
+    select.append(pending);
+  }
   select.append(blank);
-  letters.forEach((value, option) => {
+  letters.slice(0, result.format.optionCount).forEach((value, option) => {
     const item = document.createElement('option');
     item.value = String(option);
     item.textContent = value;
-    item.selected = row.answer === option;
+    item.selected = !row.requiresReview && row.answer === option;
     select.append(item);
   });
   cell.append(question, letter, select);
@@ -1013,12 +1302,12 @@ function renderResults() {
     top.className = 'result-top';
     const score = document.createElement('div');
     score.className = 'score-wrap';
-    score.style.setProperty('--score-angle', `${(grade.correct / 12) * 360}deg`);
-    score.innerHTML = `<span class="score-main">${arabicNumber.format(grade.correct)}</span><span class="score-denom">من ١٢</span>`;
+    score.style.setProperty('--score-angle', `${(grade.correct / Math.max(1, grade.total)) * 360}deg`);
+    score.innerHTML = `<span class="score-main">${arabicNumber.format(grade.correct)}</span><span class="score-denom">من ${arabicNumber.format(grade.total)}</span>`;
     const copy = document.createElement('div');
     copy.className = 'result-copy';
     const title = document.createElement('h3');
-    title.textContent = `ورقة ${arabicNumber.format(results.length - results.indexOf(result))}`;
+    title.textContent = `ورقة ${arabicNumber.format(result.id)}`;
     const description = document.createElement('p');
     description.textContent = grade.review ? 'بعض العلامات غير واضحة؛ عدّل الإجابات المميّزة ثم راجع الدرجة.' : 'القراءة مكتملة. يمكنك تعديل أي إجابة يدويًا.';
     const tag = document.createElement('span');
@@ -1092,14 +1381,20 @@ resultsList.addEventListener('change', event => {
   const result = results.find(item => item.id === Number(select.dataset.resultId));
   const question = Number(select.dataset.question);
   if (!result || !result.answers[question]) return;
+  if (select.value === '?') return;
   const value = select.value === '' ? null : Number(select.value);
   result.answers[question].answer = value;
   result.answers[question].requiresReview = false;
   result.answers[question].status = value === null ? 'blank' : 'manual';
   renderResults();
+  resultsList.querySelector(`.answer-select[data-result-id="${result.id}"][data-question="${question}"]`)?.focus();
 });
 
 cameraButton.addEventListener('click', toggleCamera);
+questionCountInput.addEventListener('input', updateBuilderFormat);
+columnCountInput.addEventListener('change', updateBuilderFormat);
+optionCountInput.addEventListener('change', updateBuilderFormat);
+downloadFormButton.addEventListener('click', downloadAnswerSheet);
 captureNow.addEventListener('click', () => {
   clearTimeout(cameraTimer);
   autoTriggered = true;
@@ -1117,6 +1412,7 @@ document.getElementById('clearKey').addEventListener('click', () => {
 });
 document.getElementById('clearResults').addEventListener('click', () => {
   results.length = 0;
+  nextResultId = 1;
   renderResults();
   hideMessage();
   showToast('تم مسح نتائج هذه الجلسة.');
@@ -1124,6 +1420,7 @@ document.getElementById('clearResults').addEventListener('click', () => {
 window.addEventListener('pagehide', stopCamera);
 window.addEventListener('beforeunload', stopCamera);
 renderKey();
+drawAnswerSheet(formPreview);
 
 </script>
 </body>
