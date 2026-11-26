@@ -91,8 +91,11 @@ h1 em { color: var(--green); font-style: normal; }
 #imageInput { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .scan-footnote { margin: 12px 2px 0; color: #8b958f; font-size: 10px; line-height: 1.7; }
 .camera-stage { position: relative; overflow: hidden; width: min(100%, 760px); aspect-ratio: var(--sheet-aspect, 1 / 1.414); background: #15201d; border-radius: 16px; margin: 0 auto 14px; min-height: 0; }
-.camera-orientation { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin: 0 0 12px; color: var(--muted); font-size: 11px; }
-.camera-orientation select { min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: #fff; font-size: 12px; }
+.camera-orientation { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: 8px; margin: 0 0 12px; color: var(--muted); font-size: 11px; }
+.camera-setting { min-width: 0; display: grid; grid-template-rows: minmax(28px, auto) 38px; gap: 5px; }
+.camera-setting label { display: flex; align-items: end; line-height: 1.35; }
+.camera-orientation select { width: 100%; min-width: 0; min-height: 38px; padding: 0 7px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: #fff; font-size: 12px; }
+@media (max-width: 480px) { .camera-orientation { gap: 6px; font-size: 10px; } .camera-orientation select { padding-inline: 4px; font-size: 11px; } }
 .camera-stage video { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; opacity: 0; pointer-events: none; }
 .camera-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .camera-stage .camera-feed { z-index: 1; }
@@ -341,23 +344,29 @@ h1 em { color: var(--green); font-style: normal; }
         </div>
 
         <div class="camera-orientation">
-          <label for="cameraOrientation">نسبة الكاميرا حسب النموذج</label>
-          <select id="cameraOrientation" disabled aria-label="نسبة الكاميرا حسب النموذج">
-            <option value="portrait" selected>طولي</option>
-            <option value="landscape">عرضي</option>
-          </select>
-          <label for="captureAccuracy">دقة الالتقاط</label>
-          <select id="captureAccuracy" aria-label="دقة الالتقاط">
-            <option value="fast">سريع</option>
-            <option value="balanced" selected>متوازن</option>
-            <option value="precise">دقيق</option>
-          </select>
-          <label for="sensitivity">حساسية التظليل</label>
-          <select id="sensitivity" aria-label="حساسية التظليل">
-            <option value="low">منخفضة (تظليل غامق)</option>
-            <option value="balanced" selected>متوازنة</option>
-            <option value="high">عالية (قلم رصاص خفيف)</option>
-          </select>
+          <div class="camera-setting">
+            <label for="cameraOrientation">نسبة الكاميرا</label>
+            <select id="cameraOrientation" disabled aria-label="نسبة الكاميرا حسب النموذج">
+              <option value="portrait" selected>طولي</option>
+              <option value="landscape">عرضي</option>
+            </select>
+          </div>
+          <div class="camera-setting">
+            <label for="captureAccuracy">دقة الالتقاط</label>
+            <select id="captureAccuracy" aria-label="دقة الالتقاط">
+              <option value="fast">سريع</option>
+              <option value="balanced" selected>متوازن</option>
+              <option value="precise">دقيق</option>
+            </select>
+          </div>
+          <div class="camera-setting">
+            <label for="sensitivity">حساسية التظليل</label>
+            <select id="sensitivity" aria-label="حساسية التظليل">
+              <option value="low">منخفضة (غامق)</option>
+              <option value="balanced" selected>متوازنة</option>
+              <option value="high">عالية (رصاص خفيف)</option>
+            </select>
+          </div>
         </div>
 
         <div id="cameraStage" class="camera-stage" hidden>
