@@ -253,6 +253,9 @@ h1 em { color: var(--green); font-style: normal; }
 .live-stats{display:flex;gap:10px;font-size:12px;font-weight:700;margin-top:6px;flex-wrap:wrap}
 .live-img{display:block;width:100%;max-height:46vh;object-fit:contain;margin:12px 0;border:1px solid var(--line);border-radius:10px}
 .live-issues{display:grid;gap:6px;font-size:12px}
+.live-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.live-actions button{min-height:42px;padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.live-actions .live-retake{color:var(--red);border-color:#f0d5ce;background:#fff8f6}
 .live-issue{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;border-radius:9px;background:var(--red-wash)}
 .live-issue.rv{background:var(--amber-wash)}
 .live-issue select{min-height:34px;font-size:14px}
@@ -1127,6 +1130,32 @@ async function renderLive() {
     list.append(el);
   });
   liveCard.append(list);
+  const actions = document.createElement('div');
+  actions.className = 'live-actions';
+  const keepButton = document.createElement('button');
+  keepButton.type = 'button';
+  keepButton.textContent = 'اعتماد النتيجة';
+  keepButton.addEventListener('click', event => { event.stopPropagation(); closeLive(); });
+  const retakeButton = document.createElement('button');
+  retakeButton.type = 'button';
+  retakeButton.className = 'live-retake';
+  retakeButton.textContent = 'حذف وإعادة التصوير';
+  retakeButton.addEventListener('click', event => {
+    event.stopPropagation();
+    const capturedId = r.id;
+    const resultIndex = results.findIndex(item => item.id === capturedId);
+    if (resultIndex >= 0) results.splice(resultIndex, 1);
+    renderResults();
+    liveEl.hidden = true;
+    liveOpen = null;
+    livePaused = false;
+    needsNewSheet = true;
+    resetCaptureStability();
+    if (activeStream) cameraStatus.textContent = 'أبعد الورقة ثم أعد وضعها للتصوير…';
+    showToast('حُذفت النتيجة؛ أبعد الورقة وأعد وضعها للتصوير.');
+  });
+  actions.append(keepButton, retakeButton);
+  liveCard.append(actions);
   annotateResult(r).then(c => { img.src = c.toDataURL('image/jpeg', 0.8); }).catch(() => {});
 }
 function showLiveResult(result) { liveOpen = result; liveEl.hidden = false; renderLive(); }
@@ -1134,7 +1163,7 @@ function closeLive() {
   liveEl.hidden = true; liveOpen = null; livePaused = false; needsNewSheet = true; resetCaptureStability();
   if (activeStream) cameraStatus.textContent = 'ضع الورقة التالية…';
 }
-liveEl.addEventListener('click', e => { if (!e.target.closest('select')) closeLive(); });
+liveEl.addEventListener('click', e => { if (!e.target.closest('select, button')) closeLive(); });
 examMaxEl.addEventListener('input', () => { renderResults(); if (liveOpen) renderLive(); });
 function renderKey() {
   answerKeyEl.innerHTML = '';
