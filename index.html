@@ -1232,6 +1232,104 @@ async function importTemplateFile(event) {
   }
 }
 
+function pdfEscape(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+}
+
+async function createResultsPdf() {
+  const pageWidth = 595;
+  const pageHeight = 842;
+  const margin = 28;
+  const imageWidth = pageWidth - margin * 2;
+  const imageHeight = imageWidth * 1273 / 900;
+  const objects = [];
+  const addObject = content => { objects.push(content); return objects.length; };
+  const fontObject = addObject('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  const pageRefs = [];
+  for (let index = 0; index < results.length; index++) {
+    const result = results[index];
+    const base64 = result.preview?.split(',')[1];
+    if (!base64) continue;
+    const binary = atob(base64);
+    const imageBytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) imageBytes[i] = binary.charCodeAt(i);
+    const imageObject = addObject({
+      dict: `<< /Type /XObject /Subtype /Image /Width 900 /Height 1273 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imageBytes.length} >>`,
+      bytes: imageBytes,
+    });
+    const grade = gradeAnswers(result.answers, result.answerKey);
+    const contentText = `BT /F1 12 Tf ${margin} ${pageHeight - 24} Td (Student ${index + 1}    Score ${grade.correct}/${grade.total}) Tj ET`;
+    const contentObject = addObject({
+      dict: `<< /Length ${contentText.length} >>`,
+      bytes: new TextEncoder().encode(`q ${imageWidth} 0 0 ${imageHeight} ${margin} 42 cm /Im${index + 1} Do Q\n${contentText}`),
+    });
+    const pageObject = addObject(null);
+    pageRefs.push({ pageObject, imageObject, contentObject, imageName: `Im${index + 1}` });
+  }
+  const pagesObject = addObject(null);
+  const catalogObject = addObject(null);
+  for (const page of pageRefs) {
+    objects[page.pageObject - 1] = `<< /Type /Page /Parent ${pagesObject} 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${fontObject} 0 R >> /XObject << /${page.imageName} ${page.imageObject} 0 R >> >> /Contents ${page.contentObject} 0 R >>`;
+  }
+  objects[pagesObject - 1] = `<< /Type /Pages /Kids [${pageRefs.map(page => `${page.pageObject} 0 R`).join(' ')}] /Count ${pageRefs.length} >>`;
+  objects[catalogObject - 1] = `<< /Type /Catalog /Pages ${pagesObject} 0 R >>`;
+  const chunks = ['%PDF-1.4\n%\xFF\xFF\xFF\xFF\n'];
+  const offsets = [0];
+  let byteLength = new TextEncoder().encode(chunks[0]).length;
+  for (let i = 0; i < objects.length; i++) {
+    offsets.push(byteLength);
+    const object = objects[i];
+    const prefix = `${i + 1} 0 obj\n`;
+    if (typeof object === 'string') {
+      const chunk = `${prefix}${object}\nendobj\n`;
+      chunks.push(chunk);
+      byteLength += new TextEncoder().encode(chunk).length;
+    } else {
+      const header = `${prefix}${object.dict}\nstream\n`;
+      const footer = '\nendstream\nendobj\n';
+      chunks.push(header, object.bytes, footer);
+      byteLength += new TextEncoder().encode(header).length + object.bytes.length + new TextEncoder().encode(footer).length;
+    }
+  }
+  const xrefOffset = byteLength;
+  let xref = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let i = 1; i < offsets.length; i++) xref += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+  const trailer = `trailer\n<< /Size ${objects.length + 1} /Root ${catalogObject} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  chunks.push(xref, trailer);
+  return new Blob(chunks, { type: 'application/pdf' });
+}
+
+async function exportResultsPdf() {
+  if (!results.length) {
+    showToast('لا توجد أوراق مصححة لتصديرها.');
+    return;
+  }
+  try {
+    const blob = await createResultsPdf();
+    const filename = `corrected-answers-${new Date().toISOString().slice(0, 10)}.pdf`;
+    if (window.showSaveFilePicker) {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{ description: 'ملف PDF', accept: { 'application/pdf': ['.pdf'] } }],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      showToast('تم حفظ ملف PDF بنجاح.');
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+    showToast('تم تنزيل ملف PDF تلقائيًا.');
+  } catch (error) {
+    if (error?.name !== 'AbortError') showToast('تعذر حفظ ملف PDF. حاول مرة أخرى.');
+  }
+}
+
 function showMessage(text, kind = 'info') {
   scanMessage.textContent = text;
   scanMessage.className = `scan-message ${kind}`;
@@ -1634,11 +1732,7 @@ downloadFormButton.addEventListener('click', downloadAnswerSheet);
 exportTemplateButton.addEventListener('click', exportTemplateFile);
 templateInput.addEventListener('change', importTemplateFile);
 printResultsButton.addEventListener('click', () => {
-  if (!results.length) {
-    showToast('لا توجد أوراق مصححة لتصديرها.');
-    return;
-  }
-  window.print();
+  exportResultsPdf();
 });
 captureNow.addEventListener('click', () => {
   clearTimeout(cameraTimer);
