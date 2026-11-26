@@ -1740,7 +1740,7 @@ function renderCameraPreview() {
   context.clearRect(0, 0, stageWidth, stageHeight);
   context.fillStyle = '#15201d';
   context.fillRect(0, 0, stageWidth, stageHeight);
-  const fitScale = Math.max(stageWidth / cameraVideo.videoWidth, stageHeight / cameraVideo.videoHeight);
+  const fitScale = Math.min(stageWidth / cameraVideo.videoWidth, stageHeight / cameraVideo.videoHeight);
   const renderedWidth = cameraVideo.videoWidth * fitScale;
   const renderedHeight = cameraVideo.videoHeight * fitScale;
   context.drawImage(cameraVideo, (stageWidth - renderedWidth) / 2, (stageHeight - renderedHeight) / 2, renderedWidth, renderedHeight);
@@ -1764,7 +1764,7 @@ function drawCameraOverlay(detection, probeWidth, probeHeight) {
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   context.clearRect(0, 0, stageWidth, stageHeight);
   if (!detection.ok) return;
-  const fitScale = Math.max(stageWidth / cameraVideo.videoWidth, stageHeight / cameraVideo.videoHeight);
+  const fitScale = Math.min(stageWidth / cameraVideo.videoWidth, stageHeight / cameraVideo.videoHeight);
   const renderedWidth = cameraVideo.videoWidth * fitScale;
   const renderedHeight = cameraVideo.videoHeight * fitScale;
   const offsetX = (stageWidth - renderedWidth) / 2;
