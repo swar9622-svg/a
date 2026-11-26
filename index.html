@@ -374,6 +374,7 @@ h1 em { color: var(--green); font-style: normal; }
           </div>
         </div>
         <label class="bw-toggle"><input id="bwProcessing" type="checkbox" /> <span>معالجة الصورة بالأبيض والأسود</span></label>
+        <label class="bw-toggle" style="margin-top:0"><input id="autoPickDarkest" type="checkbox" /> <span>اعتماد التظليل الأكبر أو الأغمق تلقائي</span></label>
 
         <div id="cameraStage" class="camera-stage" hidden>
           <video id="cameraVideo" autoplay muted playsinline aria-label="معاينة كاميرا تصوير ورقة الإجابة"></video>
@@ -880,13 +881,14 @@ function classifyRows(scores) {
     if (best.score < S.blank) {
       return { question: questionIndex + 1, answer: null, status: 'blank', scores: row };
     }
-    if (second.score >= S.blank && best.score - second.score < S.gap) {
+    const autoPick = !!document.getElementById('autoPickDarkest')?.checked;
+    if (!autoPick && second.score >= S.blank && best.score - second.score < S.gap) {
       return { question: questionIndex + 1, answer: null, status: 'ambiguous', scores: row };
     }
     return {
       question: questionIndex + 1,
       answer: best.index,
-      status: best.score < S.review ? 'review' : 'read',
+      status: (!autoPick && best.score < S.review) ? 'review' : 'read',
       scores: row,
     };
   });
