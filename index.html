@@ -828,7 +828,7 @@ function createUniqueDesignCode() {
 }
 
 function sampleBubbles(rectified, questions) {
-  const globalThreshold = otsuThreshold(rectified);
+  const threshold = otsuThreshold(rectified);
   const pixels = rectified.data;
   const grayAt = (cx, cy, dx, dy) => {
     const p = ((cy + dy) * PAGE_W + cx + dx) * 4;
@@ -838,34 +838,35 @@ function sampleBubbles(rectified, questions) {
   for (const question of questions) {
     const row = [];
     const radius = Math.max(3, Math.round(question.radius));
-    const inner = [], paperRing = [];
+    const diskOffsets = [];
+    const paperOffsets = [];
+    const r2 = radius * radius;
     for (let dy = -Math.round(radius * 1.65); dy <= Math.round(radius * 1.65); dy++) {
       for (let dx = -Math.round(radius * 1.65); dx <= Math.round(radius * 1.65); dx++) {
-        const d = dx * dx + dy * dy;
-        if (d <= (radius * 0.96) ** 2 && d >= (radius * 0.56) ** 2) inner.push([dx,dy]);
-        else if (d >= (radius * 1.18) ** 2 && d <= (radius * 1.65) ** 2) paperRing.push([dx,dy]);
+        const distance = dx * dx + dy * dy;
+        // نقرأ الحلقة الخارجية حتى لا تُحتسب الحروف المطبوعة داخل الدوائر كتظليل.
+        // نعتمد على حلقة داخلية خارج مكان الحرف وداخل حدود الدائرة؛
+        // بذلك لا تُقرأ حروف أ/ب/ج/د المطبوعة كأنها تظليل من الطالب.
+        if (distance <= (radius * 0.96) ** 2 && distance >= (radius * 0.72) ** 2) diskOffsets.push([dx, dy]);
+        else if (distance >= (radius * 1.2) ** 2 && distance <= (radius * 1.65) ** 2) paperOffsets.push([dx, dy]);
       }
     }
     const cy = Math.round(PAGE_H * question.y);
     for (const xRatio of question.xs) {
       const cx = Math.round(PAGE_W * xRatio);
-      const ringValues = paperRing.map(([dx,dy])=>grayAt(cx,cy,dx,dy));
-      ringValues.sort((a,b)=>a-b);
-      const paper = ringValues[Math.floor(ringValues.length * 0.65)] ?? 245;
-      // Threshold adapts to local paper brightness and global image threshold.
-      const cut = Math.max(82, Math.min(190, Math.min(globalThreshold + 18, paper - 30)));
-      let dark=0, ink=0, contrast=0, mid=0;
-      for (const [dx,dy] of inner) {
-        const g=grayAt(cx,cy,dx,dy), delta=Math.max(0,paper-g);
-        if(g<cut) dark++;
-        if(g<paper-18) mid++;
-        ink += Math.max(0,Math.min(1,(paper-g)/150));
-        contrast += delta;
+      const paper = paperOffsets.map(([dx, dy]) => grayAt(cx, cy, dx, dy)).sort((a, b) => a - b);
+      const paperLevel = paper[Math.floor(paper.length * 0.6)] ?? 245;
+      const softThreshold = Math.max(90, paperLevel - 12);
+      let dark = 0;
+      let soft = 0;
+      for (const [dx, dy] of diskOffsets) {
+        const gray = grayAt(cx, cy, dx, dy);
+        if (gray < threshold) dark++;
+        if (gray < softThreshold) soft++;
       }
-      const n=Math.max(1,inner.length);
-      const darkRatio=dark/n, midRatio=mid/n, inkMean=ink/n, contrastMean=contrast/n;
-      // Composite score: robust to pencil/light marks, while resisting printed glyphs and shadows.
-      row.push(Math.max(0,Math.min(1, darkRatio*0.52 + midRatio*0.22 + inkMean*0.18 + Math.min(1,contrastMean/95)*0.08)));
+      const darkRatio = dark / diskOffsets.length;
+      const softRatio = soft / diskOffsets.length;
+      row.push(Math.max(darkRatio, softRatio * 0.62));
     }
     scores.push(row);
   }
