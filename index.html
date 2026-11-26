@@ -776,7 +776,9 @@ function sampleBubbles(rectified, questions) {
       for (let dx = -Math.round(radius * 1.65); dx <= Math.round(radius * 1.65); dx++) {
         const distance = dx * dx + dy * dy;
         // نقرأ الحلقة الخارجية حتى لا تُحتسب الحروف المطبوعة داخل الدوائر كتظليل.
-        if (distance <= r2 && distance >= (radius * 0.62) ** 2) diskOffsets.push([dx, dy]);
+        // نعتمد على حلقة داخلية خارج مكان الحرف وداخل حدود الدائرة؛
+        // بذلك لا تُقرأ حروف أ/ب/ج/د المطبوعة كأنها تظليل من الطالب.
+        if (distance <= (radius * 0.96) ** 2 && distance >= (radius * 0.72) ** 2) diskOffsets.push([dx, dy]);
         else if (distance >= (radius * 1.2) ** 2 && distance <= (radius * 1.65) ** 2) paperOffsets.push([dx, dy]);
       }
     }
