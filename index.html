@@ -317,7 +317,6 @@ h1 em { color: var(--green); font-style: normal; }
           <div class="heading-copy">
             <h2 id="key-title">نموذج الإجابة</h2>
             <p>اختر الإجابة الصحيحة لكل سؤال.</p>
-            <label class="bw-toggle" style="margin:8px 0 0"><input id="multiCorrectMode" type="checkbox" /> <span>عند تظليل أكثر من خيار: اعتماد الأكثر تظليلًا تلقائيًا</span></label>
           </div>
           <div class="key-progress"><strong id="keyProgress">٠</strong><span> / ١٢</span></div>
         </div>
@@ -373,6 +372,7 @@ h1 em { color: var(--green); font-style: normal; }
               <option value="high">عالية (رصاص خفيف)</option>
             </select>
           </div>
+          <label class="bw-toggle" style="margin-top:8px"><input id="autoResolveDoubleMarks" type="checkbox" /> <span>عند تظليل أكثر من خيار: اعتماد الأكثر تظليلًا تلقائيًا</span></label>
         </div>
         <label class="bw-toggle"><input id="bwProcessing" type="checkbox" /> <span>معالجة الصورة بالأبيض والأسود</span></label>
 
@@ -873,20 +873,27 @@ function sampleBubbles(rectified, questions) {
   return scores;
 }
 
+const autoResolveDoubleMarksEl = document.getElementById("autoResolveDoubleMarks");
+let autoResolveDoubleMarks = false;
+autoResolveDoubleMarksEl.addEventListener("change", () => { autoResolveDoubleMarks = autoResolveDoubleMarksEl.checked; });
+
 function classifyRows(scores) {
   return scores.map((row, questionIndex) => {
     const ranked = row.map((score, index) => ({ score, index })).sort((a, b) => b.score - a.score);
     const [best, second] = ranked;
     const S = SENS[sensitivityEl.value] || SENS.balanced;
-    if (best.score < S.blank) return { question: questionIndex + 1, answer: null, status: 'blank', scores: row };
-    // Competing marks: optionally resolve automatically by selecting the darkest bubble.
-    const isDouble = second && second.score >= S.blank * 0.78 && best.score - second.score < S.gap;
-    if (isDouble && !autoResolveDoubleMarks) {
-      return { question: questionIndex + 1, answer: null, status: 'ambiguous', scores: row, markType: 'multiple' };
+    if (best.score < S.blank) {
+      return { question: questionIndex + 1, answer: null, status: 'blank', scores: row };
     }
-    // Even when resolving double marks, low-confidence selections are flagged for review.
-    const confidence = best.score;
-    return { question: questionIndex + 1, answer: best.index, status: (confidence < S.review && !isDouble) ? 'review' : 'read', scores: row, confidence, markType: isDouble ? 'double-auto' : confidence < S.review ? 'light' : 'filled', autoResolvedDouble: !!isDouble };
+    if (second.score >= S.blank && best.score - second.score < S.gap && !autoResolveDoubleMarks) {
+      return { question: questionIndex + 1, answer: null, status: 'ambiguous', scores: row };
+    }
+    return {
+      question: questionIndex + 1,
+      answer: best.index,
+      status: best.score < S.review ? 'review' : 'read',
+      scores: row,
+    };
   });
 }
 
@@ -965,7 +972,7 @@ function gradeAnswers(scannedAnswers, answerKey) {
     const row = scannedAnswers[i];
     if (row?.requiresReview) review++;
     else if (row?.answer === null || row?.answer === undefined) blank++;
-    else if ((row.answer === answerKey[i])) correct++;
+    else if (row.answer === answerKey[i]) correct++;
     else wrong++;
   }
   return { correct, answered: correct + wrong, review, blank, total, wrong };
@@ -999,9 +1006,6 @@ const arabicNumber = new Intl.NumberFormat('ar-EG', { useGrouping: false });
 const initialTemplate = loadAnswerTemplate();
 let formFormat = { questionCount: 12, columns: 2, optionCount: 4, dynamic: true, code: initialTemplate?.code || createUniqueDesignCode() };
 const answerKey = Array(formFormat.questionCount).fill(null);
-const multiAnswerKey = Array.from({ length: formFormat.questionCount }, () => []);
-let autoResolveDoubleMarks = false;
-const multiCorrectModeEl = document.getElementById("multiCorrectMode");
 const results = [];
 let nextResultId = 1;
 let activeStream = null;
@@ -1075,16 +1079,16 @@ async function annotateResult(result) {
   const GREEN = '#0f9d58', RED = '#d93025', AMBER = '#e08a00';
   (result.questions || []).forEach((q, i) => {
     const row = result.answers[i]; if (!row) return;
-    const key = result.answerKey[i], accepted = result.multiMode && result.multiAnswerKey?.[i]?.length ? result.multiAnswerKey[i] : [key], y = q.y * PAGE_H;
+    const key = result.answerKey[i], y = q.y * PAGE_H;
     const R = Math.max(6, (q.drawRadius || q.radius / 0.54) * (result.scanScale || 1));
     const px = o => q.xs[o] * PAGE_W;
     const ring = (o, color, w, dash) => { g.beginPath(); g.setLineDash(dash || []); g.lineWidth = w; g.strokeStyle = color; g.arc(px(o), y, R * 1.12, 0, Math.PI * 2); g.stroke(); g.setLineDash([]); };
     const s = Math.max(7, R * 0.55), cx = px(q.xs.length - 1) - R * 1.12 - s * 1.5;
     let kind, color;
     if (row.requiresReview) { kind = 'q'; color = AMBER; }
-    else if (row.answer === null || row.answer === undefined) { kind = 'b'; color = RED; accepted.forEach(k => ring(k, GREEN, 3, [5, 4])); }
-    else if (accepted.includes(row.answer)) { kind = 'ok'; color = GREEN; ring(row.answer, GREEN, 4); }
-    else { kind = 'no'; color = RED; ring(row.answer, RED, 4); accepted.forEach(k => ring(k, GREEN, 3, [5, 4])); }
+    else if (row.answer === null || row.answer === undefined) { kind = 'b'; color = RED; ring(key, GREEN, 3, [5, 4]); }
+    else if (row.answer === key) { kind = 'ok'; color = GREEN; ring(row.answer, GREEN, 4); }
+    else { kind = 'no'; color = RED; ring(row.answer, RED, 4); ring(key, GREEN, 3, [5, 4]); }
     g.strokeStyle = color; g.fillStyle = color; g.lineWidth = 4.5; g.beginPath();
     if (kind === 'ok') { g.moveTo(cx - s, y); g.lineTo(cx - s * 0.2, y + s * 0.8); g.lineTo(cx + s, y - s * 0.8); g.stroke(); }
     else if (kind === 'no') { g.moveTo(cx - s, y - s); g.lineTo(cx + s, y + s); g.moveTo(cx + s, y - s); g.lineTo(cx - s, y + s); g.stroke(); }
@@ -1205,7 +1209,6 @@ function renderKey() {
       button.setAttribute('aria-label', `${letter} للسؤال ${arabicNumber.format(question + 1)}`);
       button.addEventListener('click', () => {
         answerKey[question] = answer;
-        multiAnswerKey[question] = [answer];
         item.classList.add('is-set');
         choices.querySelectorAll('.option-choice').forEach((optionButton, optionIndex) => {
           optionButton.setAttribute('aria-checked', optionIndex === answer ? 'true' : 'false');
@@ -1366,7 +1369,6 @@ function updateBuilderFormat() {
     nextFormat.code = createUniqueDesignCode();
     formFormat = nextFormat;
     answerKey.splice(0, answerKey.length, ...Array.from({ length: nextFormat.questionCount }, (_, i) => oldKey[i] != null && oldKey[i] < nextFormat.optionCount ? oldKey[i] : null));
-    multiAnswerKey.splice(0, multiAnswerKey.length, ...Array.from({ length: nextFormat.questionCount }, (_, i) => oldKey[i] != null && oldKey[i] < nextFormat.optionCount ? [oldKey[i]] : []));
     renderKey();
     const incomplete = answerKey.includes(null);
     builderHint.textContent = incomplete ? 'تم تحديث النموذج. أكمل الإجابات الناقصة في المفتاح.' : 'تم تحديث تخطيط الورقة، والمفتاح كما هو.';
@@ -1456,7 +1458,6 @@ async function importTemplateFile(event) {
       const value = packageData.answerKey?.[index];
       return Number.isInteger(value) && value >= 0 && value < optionCount ? value : null;
     }));
-    multiAnswerKey.splice(0, multiAnswerKey.length, ...answerKey.map(value => value === null ? [] : [value]));
     localStorage.setItem('sahih-answer-template', JSON.stringify(template));
     renderKey();
     drawAnswerSheet(formPreview);
@@ -1863,7 +1864,7 @@ async function processSource(source, live = false) {
   showMessage('نحلّل الصورة داخل جهازك ونبحث عن العلامات…', 'info');
   try {
     const result = await processImageSource(source, scanFormat);
-    const answers = result.answers.map((row, index) => ({
+    const answers = result.answers.map(row => ({
       ...row,
       requiresReview: row.status === 'review' || row.status === 'ambiguous',
     }));
@@ -1900,7 +1901,6 @@ async function processFiles(files) {
 
 function createAnswerCell(result, row, index, key) {
   const cell = document.createElement('div');
-  const accepted = [key[index]];
   const isCorrect = !row.requiresReview && row.answer !== null && row.answer === key[index];
   const isWrong = !row.requiresReview && row.answer !== null && row.answer !== key[index];
   cell.className = `answer-cell${row.requiresReview ? ' needs-review' : ''}${isCorrect ? ' is-right' : ''}${isWrong ? ' is-wrong' : ''}${row.answer === null ? ' is-blank' : ''}`;
@@ -2090,7 +2090,6 @@ imageInput.addEventListener('change', event => {
 });
 document.getElementById('clearKey').addEventListener('click', () => {
   answerKey.fill(null);
-  multiAnswerKey.forEach(list => list.splice(0));
   renderKey();
   showToast('تم مسح نموذج الإجابة.');
 });
@@ -2103,10 +2102,6 @@ document.getElementById('clearResults').addEventListener('click', () => {
 });
 window.addEventListener('pagehide', stopCamera);
 window.addEventListener('beforeunload', stopCamera);
-multiCorrectModeEl.addEventListener('change', () => {
-  autoResolveDoubleMarks = multiCorrectModeEl.checked;
-  showToast(autoResolveDoubleMarks ? 'فعال: سيختار الأكثر تظليلًا عند وجود علامتين (مع تنبيه للمراجعة).' : 'متوقف: التظليل المزدوج سيُحال للمراجعة دون اختيار.');
-});
 renderKey();
 drawAnswerSheet(formPreview);
 
