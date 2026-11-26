@@ -1069,12 +1069,12 @@ function drawAnswerSheet(canvas, scale = 1) {
   // سطر بيانات الطالب الكبير: الاسم ثم مستطيل طويل ثم الفصل ثم مربع صغير.
   context.strokeStyle = '#6f8178';
   context.lineWidth = 2.5;
-  context.strokeRect(380 + headerOffset, 62, 320, 50);
-  context.strokeRect(170 + headerOffset, 62, 80, 50);
+  context.strokeRect(380 + headerOffset, 50, 320, 70);
+  context.strokeRect(170 + headerOffset, 50, 80, 70);
   context.fillStyle = '#34443d';
   context.font = 'bold 32px Tahoma, Arial, sans-serif';
-  context.fillText('الاسم', 750 + headerOffset, 87);
-  context.fillText('الفصل', 300 + headerOffset, 87);
+  context.fillText('الاسم', 750 + headerOffset, 85);
+  context.fillText('الفصل', 300 + headerOffset, 85);
 
   // Frame is drawn after layout so it can hug the actual question grid.
   // كود التصميم: عموديًا في الهامش الأيسر بين علامتي التسجيل.
