@@ -89,6 +89,9 @@ h1 em { color: var(--green); font-style: normal; }
 #imageInput { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .scan-footnote { margin: 12px 2px 0; color: #8b958f; font-size: 10px; line-height: 1.7; }
 .camera-stage { position: relative; overflow: hidden; width: min(100%, 430px, calc(76svh * 0.5625)); aspect-ratio: 9 / 16; background: #15201d; border-radius: 16px; margin: 0 auto 14px; min-height: 0; }
+.camera-stage.is-landscape { width: min(100%, 760px, calc(76svh * 1.7778)); aspect-ratio: 16 / 9; }
+.camera-orientation { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin: 0 0 12px; color: var(--muted); font-size: 11px; }
+.camera-orientation select { min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: #fff; font-size: 12px; }
 .camera-stage video { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; opacity: 0; pointer-events: none; }
 .camera-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .camera-stage .camera-feed { z-index: 1; }
@@ -311,6 +314,14 @@ h1 em { color: var(--green); font-style: normal; }
         <div id="keyGate" class="key-gate">
           <span class="gate-icon" aria-hidden="true">↟</span>
           <span>أدخل نموذج الإجابة أولًا لبدء التصحيح.</span>
+        </div>
+
+        <div class="camera-orientation">
+          <label for="cameraOrientation">اتجاه عرض الكاميرا</label>
+          <select id="cameraOrientation">
+            <option value="portrait" selected>طولي</option>
+            <option value="landscape">عرضي</option>
+          </select>
         </div>
 
         <div id="cameraStage" class="camera-stage" hidden>
@@ -935,6 +946,7 @@ const cameraStage = document.getElementById('cameraStage');
 const cameraVideo = document.getElementById('cameraVideo');
 const cameraFeed = document.getElementById('cameraFeed');
 const cameraOverlay = document.getElementById('cameraOverlay');
+const cameraOrientation = document.getElementById('cameraOrientation');
 const cameraStatus = document.getElementById('cameraStatus');
 const cameraBadge = document.getElementById('cameraBadge');
 const captureNow = document.getElementById('captureNow');
@@ -1454,8 +1466,8 @@ function checkLiveFrame() {
 }
 
 function syncCameraOrientation() {
-  // The 9:16 stage changes display size only; never rotate the camera feed to match it.
-  cameraStage.classList.remove('is-rotated');
+  // الاتجاه يغيّر مساحة المعاينة فقط؛ تبقى صورة الكاميرا الخام كما هي للتصحيح.
+  cameraStage.classList.toggle('is-landscape', cameraOrientation.value === 'landscape');
 }
 
 function renderCameraPreview() {
@@ -1730,6 +1742,10 @@ cameraButton.addEventListener('click', toggleCamera);
 questionCountInput.addEventListener('input', updateBuilderFormat);
 columnCountInput.addEventListener('change', updateBuilderFormat);
 optionCountInput.addEventListener('change', updateBuilderFormat);
+cameraOrientation.addEventListener('change', () => {
+  syncCameraOrientation();
+  renderCameraPreview();
+});
 downloadFormButton.addEventListener('click', downloadAnswerSheet);
 exportTemplateButton.addEventListener('click', exportTemplateFile);
 templateInput.addEventListener('change', importTemplateFile);
