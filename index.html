@@ -1403,10 +1403,6 @@ async function renderLive() {
       sel.innerHTML = '<option value="?" selected disabled>؟</option><option value="">فارغ</option>' + letters.slice(0, r.format.optionCount).map((l, o) => `<option value="${o}">${l}</option>`).join('');
       sel.addEventListener('change', () => applyManual(r, i, sel.value === '' ? null : Number(sel.value)));
       el.append(sel);
-    } else if (row.answer === null || row.answer === undefined) {
-      el.className = 'live-issue'; el.innerHTML = `<span>س${n}: فارغ</span><span>الصحيح ${optionLabel(key)}</span>`;
-    } else if (row.answer !== key) {
-      el.className = 'live-issue'; el.innerHTML = `<span>س${n}: اختار ${optionLabel(row.answer)}</span><span>الصحيح ${optionLabel(key)}</span>`;
     } else return;
     list.append(el);
   });
