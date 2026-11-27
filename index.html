@@ -949,7 +949,7 @@ function getQuestionLayout(format = {}) {
     bottom: Math.min(PAGE_H - 72, top + headerH + rowsMax * rowH - rowH / 2 + drawRadius + Math.max(rowH, 100)),
   };
   const saved = format.savedTemplate;
-  const sameFormat = saved && saved.layoutVersion === 3 && saved.questionCount === questionCount && saved.columns === columns && saved.optionCount === optionCount;
+  const sameFormat = saved && saved.layoutVersion === 4 && saved.questionCount === questionCount && saved.columns === columns && saved.optionCount === optionCount;
   if (sameFormat && Array.isArray(saved.questions) && saved.questions.length === questions.length) {
     return {
       questionCount, columns, requestedColumns, optionCount, legacy: false, rowsMax,
@@ -964,15 +964,11 @@ function getQuestionLayout(format = {}) {
 function saveAnswerTemplate(format, layout, renderHeight = PAGE_H) {
   if (!layout || layout.legacy) return;
   try {
-    // تحويل دقيق بين موضعي علامتي التسجيل العلوية والسفلية بعد قص الورقة.
-    const sourceTop = MARKER_RATIO.topY * PAGE_H;
-    const sourceBottom = MARKER_RATIO.bottomY * renderHeight;
-    const targetTop = MARKER_RATIO.topY * PAGE_H;
-    const targetBottom = MARKER_RATIO.bottomY * PAGE_H;
-    const mapPrintedYToScanY = value => targetTop + (value - sourceTop) * (targetBottom - targetTop) / (sourceBottom - sourceTop);
+    // الصورة المقوّمة عند القراءة لها أبعاد الورقة المطبوعة نفسها وعلامات التسجيل في المواضع نفسها،
+    // لذلك إحداثيات الدوائر المطبوعة هي نفسها إحداثيات القراءة والتعليم دون أي تحويل.
     localStorage.setItem('sahih-answer-template', JSON.stringify({
       version: 2,
-      layoutVersion: 3,
+      layoutVersion: 4,
       questionCount: layout.questionCount,
       columns: layout.columns,
       optionCount: layout.optionCount,
@@ -982,8 +978,7 @@ function saveAnswerTemplate(format, layout, renderHeight = PAGE_H) {
       rowH: layout.rowH,
       drawRadius: layout.drawRadius,
       frame: layout.frame,
-      // الإحداثيات هنا هي إحداثيات الصورة المطبوعة بعد قص المساحة البيضاء.
-      questions: layout.questions.map(question => ({ ...question, y: mapPrintedYToScanY(question.y * PAGE_H) / PAGE_H })),
+      questions: layout.questions.map(question => ({ ...question })),
     }));
   } catch (_) {}
 }
@@ -1012,7 +1007,40 @@ function createUniqueDesignCode() {
   return code;
 }
 
-function sampleBubbles(rectified, questions) {
+function refineRowCenter(grayAt, scanW, scanH, question, drawR) {
+  const range = Math.max(2, Math.min(12, Math.round(drawR * 0.4)));
+  const angles = 20;
+  const inner = Math.max(2, drawR), outer = drawR * 1.45;
+  const cosines = [], sines = [];
+  for (let k = 0; k < angles; k++) { const t = k / angles * Math.PI * 2; cosines.push(Math.cos(t)); sines.push(Math.sin(t)); }
+  const baseCy = Math.round(PAGE_H * question.y);
+  const centers = question.xs.map(x => Math.round(scanW * x));
+  const safe = (x, y) => x >= 1 && y >= 1 && x < scanW - 1 && y < scanH - 1;
+  const ringScore = (dx, dy) => {
+    let sum = 0, count = 0;
+    for (const baseCx of centers) {
+      for (let k = 0; k < angles; k++) {
+        const x1 = Math.round(baseCx + dx + cosines[k] * inner), y1 = Math.round(baseCy + dy + sines[k] * inner);
+        const x2 = Math.round(baseCx + dx + cosines[k] * outer), y2 = Math.round(baseCy + dy + sines[k] * outer);
+        if (!safe(x1, y1) || !safe(x2, y2)) continue;
+        sum += grayAt(x2, y2, 0, 0) - grayAt(x1, y1, 0, 0);
+        count++;
+      }
+    }
+    return count ? sum / count : -Infinity;
+  };
+  const base = ringScore(0, 0);
+  let best = { dx: 0, dy: 0, score: base };
+  for (let dy = -range; dy <= range; dy++) for (let dx = -range; dx <= range; dx++) {
+    const score = ringScore(dx, dy);
+    if (score > best.score) best = { dx, dy, score };
+  }
+  // لا نغيّر المركز إلا إذا كان التحسن واضحًا حتى لا تنحرف القراءة بسبب ظل أو بقعة.
+  if (best.score > base + 6 && best.score > 12) return { dx: best.dx, dy: best.dy };
+  return { dx: 0, dy: 0 };
+}
+
+function sampleBubbles(rectified, questions, options = {}) {
   const threshold = otsuThreshold(rectified);
   const pixels = rectified.data;
   const scanW = rectified.width;
@@ -1038,9 +1066,17 @@ function sampleBubbles(rectified, questions) {
         else if (distance >= (radius * 1.2) ** 2 && distance <= (radius * 1.65) ** 2) paperOffsets.push([dx, dy]);
       }
     }
-    const cy = Math.round(PAGE_H * question.y);
+    let cy = Math.round(PAGE_H * question.y);
+    let shiftX = 0;
+    if (options.refine) {
+      // نضبط مركز الصف على الإطار المطبوع للدوائر لتصحيح أي انحراف بسيط بعد تقويم المنظور.
+      const drawR = question.drawRadius || question.radius / 0.54;
+      const shift = refineRowCenter(grayAt, scanW, scanH, question, drawR);
+      shiftX = shift.dx; cy += shift.dy;
+      question.refineX = shift.dx; question.refineY = shift.dy;
+    }
     for (const xRatio of question.xs) {
-      const cx = Math.round(scanW * xRatio);
+      const cx = Math.round(scanW * xRatio) + shiftX;
       const paper = paperOffsets.map(([dx, dy]) => grayAt(cx, cy, dx, dy)).sort((a, b) => a - b);
       const paperLevel = paper[Math.floor(paper.length * 0.6)] ?? 245;
       const softThreshold = Math.max(90, paperLevel - 12);
@@ -1161,7 +1197,7 @@ async function processImageSource(source, format = {}) {
       ...question,
       radius: question.radius * scanScale,
     }));
-    const scores = sampleBubbles(rectified, scanQuestions);
+    const scores = sampleBubbles(rectified, scanQuestions, { refine: !layout.legacy });
   return {
     answers: classifyRows(scores),
     preview: makePreview(rectified),
@@ -1292,9 +1328,9 @@ async function annotateResult(result) {
   const GREEN = '#0f9d58', RED = '#d93025', AMBER = '#e08a00';
   (result.questions || []).forEach((q, i) => {
     const row = result.answers[i]; if (!row) return;
-    const key = result.answerKey[i], y = q.y * PAGE_H;
+    const key = result.answerKey[i], y = q.y * PAGE_H + (q.refineY || 0);
     const R = Math.max(6, (q.drawRadius || q.radius / 0.54) * (result.scanScale || 1));
-    const px = o => q.xs[o] * imageWidth;
+    const px = o => q.xs[o] * imageWidth + (q.refineX || 0);
     const ring = (o, color, w, dash) => { g.beginPath(); g.setLineDash(dash || []); g.lineWidth = w; g.strokeStyle = color; g.arc(px(o), y, R * 1.12, 0, Math.PI * 2); g.stroke(); g.setLineDash([]); };
     const s = Math.max(7, R * 0.55), cx = px(q.xs.length - 1) - R * 1.12 - s * 1.5;
     let kind, color;
