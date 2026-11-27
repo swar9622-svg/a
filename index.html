@@ -444,15 +444,21 @@ const MARK_TARGETS = {
 
 function detectFiducials(imageData, width, height) {
   let first;
-  for (const limit of [105, 85, 130, 155]) {
-    const found = detectFiducialsAt(imageData, width, height, limit);
-    if (found.ok) return found;
-    first = first || found;
+  // دعم البطاقات الجديدة والبطاقات المطبوعة من الإصدارات السابقة.
+  const profiles = [
+    { x: MARKER_RATIO.x, topY: MARKER_RATIO.topY, bottomY: MARKER_RATIO.bottomY },
+    { x: 0.055, topY: 0.045, bottomY: 0.955 },
+  ];
+  for (const profile of profiles) {
+    for (const limit of [105, 85, 130, 155]) {
+      const found = detectFiducialsAt(imageData, width, height, limit, profile);
+      if (found.ok) return found;
+      first = first || found;
+    }
   }
   return first;
 }
-
-function detectFiducialsAt(imageData, width, height, darkLimit) {
+function detectFiducialsAt(imageData, width, height, darkLimit, profile = MARKER_RATIO) {
   const length = width * height;
   if (length < 100) return { ok: false, reason: 'الصورة صغيرة جدًا.' };
   const rgba = imageData.data;
@@ -507,10 +513,10 @@ function detectFiducialsAt(imageData, width, height, darkLimit) {
 
   // مناطق بحث ضيقة حول موضع العلامة تمنع التقاط النص أو الإطار كعلامة زاوية.
   const specs = [
-    ['tl', MARKER_RATIO.x, 1 - MARKER_RATIO.x, MARKER_RATIO.topY, MARKER_RATIO.topY],
-    ['tr', 1 - MARKER_RATIO.x, MARKER_RATIO.x, MARKER_RATIO.topY, MARKER_RATIO.topY],
-    ['bl', MARKER_RATIO.x, 1 - MARKER_RATIO.x, MARKER_RATIO.bottomY, MARKER_RATIO.bottomY],
-    ['br', 1 - MARKER_RATIO.x, MARKER_RATIO.x, MARKER_RATIO.bottomY, MARKER_RATIO.bottomY],
+    ['tl', profile.x, 1 - profile.x, profile.topY, profile.topY],
+    ['tr', 1 - profile.x, profile.x, profile.topY, profile.topY],
+    ['bl', profile.x, 1 - profile.x, profile.bottomY, profile.bottomY],
+    ['br', 1 - profile.x, profile.x, profile.bottomY, profile.bottomY],
   ];
   const corners = {};
   for (const [name, minX, maxX, minY, maxY] of specs) {
@@ -518,8 +524,8 @@ function detectFiducialsAt(imageData, width, height, darkLimit) {
       const px = point.x / width, py = point.y / height;
       return px >= minX - 0.18 && px <= minX + 0.18 && py >= minY - 0.18 && py <= minY + 0.18;
     }).map(point => {
-      const targetX = name.endsWith('l') ? MARKER_RATIO.x : 1 - MARKER_RATIO.x;
-      const targetY = name.startsWith('t') ? MARKER_RATIO.topY : MARKER_RATIO.bottomY;
+      const targetX = name.endsWith('l') ? profile.x : 1 - profile.x;
+      const targetY = name.startsWith('t') ? profile.topY : profile.bottomY;
       const distance = Math.hypot(point.x / width - targetX, point.y / height - targetY);
       const shapePenalty = Math.abs(1 - point.width / point.height) * 0.05;
       return { point, distance, score: distance + shapePenalty };
@@ -547,7 +553,7 @@ function detectFiducialsAt(imageData, width, height, darkLimit) {
   if (horizontalRatio < 0.62 || verticalRatio < 0.62 || topSlope > 0.42 || bottomSlope > 0.42) {
     return { ok: false, reason: 'الورقة مائلة أو العلامات غير متناسقة؛ اجعل الهاتف فوق الورقة مباشرةً.', candidates };
   }
-  return { ok: true, corners, candidates };
+  return { ok: true, corners, candidates, profile };
 }
 
 function polygonArea(points) {
