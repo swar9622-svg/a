@@ -139,7 +139,7 @@ h1 em { color: var(--green); font-style: normal; }
 .stat.is-wrong strong { color: var(--red); }
 .stat.is-review strong { color: var(--amber); }
 .result-body { display: grid; grid-template-columns: 124px minmax(0,1fr); gap: 15px; padding: 15px 18px 18px; }
-.result-preview { width: 124px; height: 160px; object-fit: cover; object-position: center; background: #f5f6f3; border: 1px solid var(--line); border-radius: 9px; }
+.result-preview { width: 124px; height: auto; aspect-ratio: auto; object-fit: cover; object-position: center; background: #f5f6f3; border: 1px solid var(--line); border-radius: 9px; }
 .answer-review { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; align-content: start; }
 .answer-cell { min-width: 0; display: flex; align-items: center; gap: 5px; padding: 6px 5px; border-radius: 8px; background: #f7f8f6; border: 1px solid #eef0ed; }
 .answer-cell.needs-review { background: #fffaf0; border-color: #f2dfb9; }
@@ -178,7 +178,7 @@ h1 em { color: var(--green); font-style: normal; }
   .key-grid { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
   .key-item { padding: 8px 10px; }
   .result-body { grid-template-columns: 145px minmax(0,1fr); }
-  .result-preview { width: 145px; height: 185px; }
+  .result-preview { width: 145px; height: auto; aspect-ratio: auto; }
   .answer-review { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; }
   .answer-cell { padding: 7px 6px; }
 }
@@ -202,7 +202,7 @@ h1 em { color: var(--green); font-style: normal; }
   .score-wrap { width: 77px; height: 77px; flex-basis: 77px; }
   .score-main { font-size: 22px; }
   .result-body { grid-template-columns: 88px minmax(0,1fr); gap: 9px; padding: 12px 11px 13px; }
-  .result-preview { width: 88px; height: 132px; }
+  .result-preview { width: 88px; height: auto; aspect-ratio: auto; }
   .answer-review { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; }
   .answer-cell { gap: 3px; padding: 5px 3px; }
   .answer-select { min-width: 35px; }
@@ -218,7 +218,7 @@ h1 em { color: var(--green); font-style: normal; }
   .results-list { display: block; }
   .result-card { border: 1px solid #cfd8d0; box-shadow: none; break-inside: avoid; page-break-inside: avoid; margin-bottom: 12mm; }
   .result-card:not(:last-child) { break-after: page; page-break-after: always; }
-  .result-preview { max-height: 170mm; }
+  .result-preview { max-width: 100%; max-height: 170mm; width: auto; height: auto; }
   .answer-select { border: 0; appearance: none; background: transparent; }
 }
 .form-builder-controls { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin-bottom: 16px; }
@@ -433,11 +433,13 @@ const OPTION_X = [0.5856, 0.4604, 0.3369, 0.2126];
 const ROW_Y = [0.1984, 0.2606, 0.3224, 0.3846, 0.4468, 0.5096, 0.5718, 0.6346, 0.6968, 0.7596, 0.8218, 0.8817];
 const GRID_X = [0.150, 0.274, 0.398, 0.523, 0.646, 0.857];
 const GRID_Y = [0.104, 0.167, 0.229, 0.291, 0.353, 0.415, 0.477, 0.539, 0.601, 0.664, 0.726, 0.788, 0.850, 0.913];
+// العلامات داخل الإطار مع هامش أبيض واضح؛ الإطار نفسه يبقى خارج العلامات.
+const MARKER_RATIO = { x: 0.08, topY: 0.065, bottomY: 0.965 };
 const MARK_TARGETS = {
-  tl: [PAGE_W * 0.026, PAGE_H * 0.018],
-  tr: [PAGE_W * 0.974, PAGE_H * 0.018],
-  bl: [PAGE_W * 0.026, PAGE_H * 0.982],
-  br: [PAGE_W * 0.974, PAGE_H * 0.982],
+  tl: [PAGE_W * MARKER_RATIO.x, PAGE_H * MARKER_RATIO.topY],
+  tr: [PAGE_W * (1 - MARKER_RATIO.x), PAGE_H * MARKER_RATIO.topY],
+  bl: [PAGE_W * MARKER_RATIO.x, PAGE_H * MARKER_RATIO.bottomY],
+  br: [PAGE_W * (1 - MARKER_RATIO.x), PAGE_H * MARKER_RATIO.bottomY],
 };
 
 function detectFiducials(imageData, width, height) {
@@ -503,22 +505,26 @@ function detectFiducialsAt(imageData, width, height, darkLimit) {
     });
   }
 
+  // مناطق بحث ضيقة حول موضع العلامة تمنع التقاط النص أو الإطار كعلامة زاوية.
   const specs = [
-    ['tl', p => p.x < width * 0.5 && p.y < height * 0.5, 0.026, 0.018],
-    ['tr', p => p.x >= width * 0.5 && p.y < height * 0.5, 0.974, 0.018],
-    ['bl', p => p.x < width * 0.5 && p.y >= height * 0.5, 0.026, 0.982],
-    ['br', p => p.x >= width * 0.5 && p.y >= height * 0.5, 0.974, 0.982],
+    ['tl', MARKER_RATIO.x, 1 - MARKER_RATIO.x, MARKER_RATIO.topY, MARKER_RATIO.topY],
+    ['tr', 1 - MARKER_RATIO.x, MARKER_RATIO.x, MARKER_RATIO.topY, MARKER_RATIO.topY],
+    ['bl', MARKER_RATIO.x, 1 - MARKER_RATIO.x, MARKER_RATIO.bottomY, MARKER_RATIO.bottomY],
+    ['br', 1 - MARKER_RATIO.x, MARKER_RATIO.x, MARKER_RATIO.bottomY, MARKER_RATIO.bottomY],
   ];
   const corners = {};
-  for (const [name, inQuadrant, targetX, targetY] of specs) {
-    const options = candidates.filter(inQuadrant).map(point => {
-      const dx = point.x / width - targetX;
-      const dy = point.y / height - targetY;
-      const distance = Math.hypot(dx, dy);
-      const shapePenalty = Math.abs(1 - point.width / point.height) * 0.035;
+  for (const [name, minX, maxX, minY, maxY] of specs) {
+    const options = candidates.filter(point => {
+      const px = point.x / width, py = point.y / height;
+      return px >= minX - 0.18 && px <= minX + 0.18 && py >= minY - 0.18 && py <= minY + 0.18;
+    }).map(point => {
+      const targetX = name.endsWith('l') ? MARKER_RATIO.x : 1 - MARKER_RATIO.x;
+      const targetY = name.startsWith('t') ? MARKER_RATIO.topY : MARKER_RATIO.bottomY;
+      const distance = Math.hypot(point.x / width - targetX, point.y / height - targetY);
+      const shapePenalty = Math.abs(1 - point.width / point.height) * 0.05;
       return { point, distance, score: distance + shapePenalty };
     }).sort((a, b) => a.score - b.score);
-    if (!options.length || options[0].distance > 0.48) return { ok: false, reason: 'تعذر تحديد مواضع علامات الزوايا؛ قرّب الورقة وأظهرها كاملة.', candidates };
+    if (!options.length || options[0].distance > 0.18) return { ok: false, reason: 'تعذر تحديد العلامات الأربع بدقة؛ قرّب الورقة وأظهر الإطار والعلامات كاملة.', candidates };
     corners[name] = options[0].point;
   }
   const markerWidths = Object.values(corners).map(point => point.width).sort((a, b) => a - b);
@@ -530,6 +536,17 @@ function detectFiducialsAt(imageData, width, height, darkLimit) {
   if (!isConvexQuad(polygon)) return { ok: false, reason: 'تعذر تصحيح منظور الورقة؛ وجّه الكاميرا مباشرةً نحوها.', candidates };
   const quadArea = polygonArea(polygon);
   if (quadArea < width * height * 0.07) return { ok: false, reason: 'الورقة بعيدة أو مائلة جدًا؛ قرّبها من الكاميرا.', candidates };
+  // رفض الرباعيات غير المنطقية حتى لا تُلتقط صورة مائلة اعتمادًا على نقطة خاطئة.
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const top = dist(corners.tl, corners.tr), bottom = dist(corners.bl, corners.br);
+  const left = dist(corners.tl, corners.bl), right = dist(corners.tr, corners.br);
+  const horizontalRatio = Math.min(top, bottom) / Math.max(top, bottom);
+  const verticalRatio = Math.min(left, right) / Math.max(left, right);
+  const topSlope = Math.abs(corners.tr.y - corners.tl.y) / Math.max(1, top);
+  const bottomSlope = Math.abs(corners.br.y - corners.bl.y) / Math.max(1, bottom);
+  if (horizontalRatio < 0.62 || verticalRatio < 0.62 || topSlope > 0.42 || bottomSlope > 0.42) {
+    return { ok: false, reason: 'الورقة مائلة أو العلامات غير متناسقة؛ اجعل الهاتف فوق الورقة مباشرةً.', candidates };
+  }
   return { ok: true, corners, candidates };
 }
 
@@ -601,16 +618,21 @@ function invert3(m) {
   return [A, c * h - b * i, b * f - c * e, B, a * i - c * g, c * d - a * f, C, b * g - a * h, a * e - b * d].map(v => v / det);
 }
 
-function warpPerspective(sourceData, sourceW, sourceH, corners) {
+function warpPerspective(sourceData, sourceW, sourceH, corners, targetW = PAGE_W, targetH = PAGE_H) {
   const src = ['tl', 'tr', 'bl', 'br'].map(name => [corners[name].x, corners[name].y]);
-  const dst = ['tl', 'tr', 'bl', 'br'].map(name => MARK_TARGETS[name]);
+  const dst = [
+    [targetW * MARKER_RATIO.x, targetH * MARKER_RATIO.topY],
+    [targetW * (1 - MARKER_RATIO.x), targetH * MARKER_RATIO.topY],
+    [targetW * MARKER_RATIO.x, targetH * MARKER_RATIO.bottomY],
+    [targetW * (1 - MARKER_RATIO.x), targetH * MARKER_RATIO.bottomY],
+  ];
   const inverse = invert3(homographyFromFourPoints(src, dst));
-  const output = new ImageData(PAGE_W, PAGE_H);
+  const output = new ImageData(targetW, targetH);
   const inData = sourceData.data;
   const outData = output.data;
   outData.fill(255);
-  for (let y = 0; y < PAGE_H; y++) {
-    for (let x = 0; x < PAGE_W; x++) {
+  for (let y = 0; y < targetH; y++) {
+    for (let x = 0; x < targetW; x++) {
       const denom = inverse[6] * x + inverse[7] * y + inverse[8];
       if (Math.abs(denom) < 1e-10) continue;
       const sx = (inverse[0] * x + inverse[1] * y + inverse[2]) / denom;
@@ -619,7 +641,7 @@ function warpPerspective(sourceData, sourceW, sourceH, corners) {
       if (x0 < 0 || y0 < 0 || x0 + 1 >= sourceW || y0 + 1 >= sourceH) continue;
       const fx = sx - x0, fy = sy - y0;
       const i00 = (y0 * sourceW + x0) * 4, i01 = i00 + sourceW * 4;
-      const o = (y * PAGE_W + x) * 4;
+      const o = (y * targetW + x) * 4;
       for (let c = 0; c < 3; c++) {
         outData[o + c] = inData[i00 + c] * (1 - fx) * (1 - fy) + inData[i00 + 4 + c] * fx * (1 - fy) + inData[i01 + c] * (1 - fx) * fy + inData[i01 + 4 + c] * fx * fy;
       }
@@ -735,7 +757,7 @@ function getQuestionLayout(format = {}) {
   // نثبت عرض الخلية والمسافة مثل تخطيط العمودين، ثم نزيد عرض الورقة عند الحاجة.
   const cellW = 76;
   // حدّ أقصى مضغوط للصفوف حتى يحيط الإطار بمنطقة الأسئلة بدل امتداده لأسفل الصفحة.
-  const rowH = Math.min(90, (PAGE_H - 80 - top - headerH) / rowsMax);
+  const rowH = Math.min(90, (PAGE_H - 170 - top - headerH) / rowsMax);
   const drawRadius = Math.max(3, Math.min(cellW * 0.39, rowH * 0.37, 28));
   const colW = qw + optionCount * cellW;
   const totalW = columns * colW + (columns - 1) * gutter;
@@ -765,7 +787,7 @@ function getQuestionLayout(format = {}) {
     bottom: Math.min(PAGE_H - 72, top + headerH + rowsMax * rowH - rowH / 2 + drawRadius + Math.max(22, rowH * 0.34)),
   };
   const saved = format.savedTemplate;
-  const sameFormat = saved && saved.questionCount === questionCount && saved.columns === columns && saved.optionCount === optionCount;
+  const sameFormat = saved && saved.layoutVersion === 3 && saved.questionCount === questionCount && saved.columns === columns && saved.optionCount === optionCount;
   if (sameFormat && Array.isArray(saved.questions) && saved.questions.length === questions.length) {
     return {
       questionCount, columns, requestedColumns, optionCount, legacy: false, rowsMax,
@@ -781,13 +803,14 @@ function saveAnswerTemplate(format, layout, renderHeight = PAGE_H) {
   if (!layout || layout.legacy) return;
   try {
     // تحويل دقيق بين موضعي علامتي التسجيل العلوية والسفلية بعد قص الورقة.
-    const sourceTop = 0.018 * PAGE_H;
-    const sourceBottom = 0.982 * renderHeight;
-    const targetTop = 0.018 * PAGE_H;
-    const targetBottom = 0.982 * PAGE_H;
+    const sourceTop = MARKER_RATIO.topY * PAGE_H;
+    const sourceBottom = MARKER_RATIO.bottomY * renderHeight;
+    const targetTop = MARKER_RATIO.topY * PAGE_H;
+    const targetBottom = MARKER_RATIO.bottomY * PAGE_H;
     const mapPrintedYToScanY = value => targetTop + (value - sourceTop) * (targetBottom - targetTop) / (sourceBottom - sourceTop);
     localStorage.setItem('sahih-answer-template', JSON.stringify({
       version: 2,
+      layoutVersion: 3,
       questionCount: layout.questionCount,
       columns: layout.columns,
       optionCount: layout.optionCount,
@@ -830,8 +853,10 @@ function createUniqueDesignCode() {
 function sampleBubbles(rectified, questions) {
   const threshold = otsuThreshold(rectified);
   const pixels = rectified.data;
+  const scanW = rectified.width;
+  const scanH = rectified.height;
   const grayAt = (cx, cy, dx, dy) => {
-    const p = ((cy + dy) * PAGE_W + cx + dx) * 4;
+    const p = ((cy + dy) * scanW + cx + dx) * 4;
     return pixels[p] * 0.299 + pixels[p + 1] * 0.587 + pixels[p + 2] * 0.114;
   };
   const scores = [];
@@ -853,7 +878,7 @@ function sampleBubbles(rectified, questions) {
     }
     const cy = Math.round(PAGE_H * question.y);
     for (const xRatio of question.xs) {
-      const cx = Math.round(PAGE_W * xRatio);
+      const cx = Math.round(scanW * xRatio);
       const paper = paperOffsets.map(([dx, dy]) => grayAt(cx, cy, dx, dy)).sort((a, b) => a - b);
       const paperLevel = paper[Math.floor(paper.length * 0.6)] ?? 245;
       const softThreshold = Math.max(90, paperLevel - 12);
@@ -907,8 +932,8 @@ function applyBlackWhite(imageData) {
 
 function makePreview(rectified) {
   const canvas = document.createElement('canvas');
-  canvas.width = PAGE_W;
-  canvas.height = PAGE_H;
+  canvas.width = rectified.width;
+  canvas.height = rectified.height;
   canvas.getContext('2d').putImageData(rectified, 0, 0);
   return canvas.toDataURL('image/jpeg', 0.88);
 }
@@ -933,9 +958,11 @@ async function processImageSource(source, format = {}) {
   const sourceImage = context.getImageData(0, 0, width, height);
   const detection = detectFiducials(sourceImage, width, height);
   if (!detection.ok) throw new Error(detection.reason);
-  let rectified = warpPerspective(sourceImage, width, height, detection.corners);
-  if (document.getElementById('bwProcessing')?.checked) rectified = applyBlackWhite(rectified);
   const layout = getQuestionLayout(format);
+  const targetW = layout.legacy ? PAGE_W : Math.max(1, Math.round(layout.sheetWidth || PAGE_W));
+  const targetH = layout.legacy ? PAGE_H : Math.max(1, Math.round(Math.min(PAGE_H, Math.ceil(layout.frame.bottom + 34))));
+  let rectified = warpPerspective(sourceImage, width, height, detection.corners, targetW, targetH);
+  if (document.getElementById('bwProcessing')?.checked) rectified = applyBlackWhite(rectified);
   let questions = layout.questions;
   let gridCalibrated = true;
   if (layout.legacy) {
@@ -944,7 +971,7 @@ async function processImageSource(source, format = {}) {
     // Without printed grid lines, the registered template coordinates are the fallback.
     gridCalibrated = true;
   }
-    const scanScale = layout.sheetWidth ? PAGE_W / layout.sheetWidth : 1;
+    const scanScale = layout.sheetWidth ? targetW / layout.sheetWidth : 1;
     const scanQuestions = questions.map(question => ({
       ...question,
       radius: question.radius * scanScale,
@@ -957,6 +984,8 @@ async function processImageSource(source, format = {}) {
     gridCalibrated,
     layoutType: layout.legacy ? 'legacy' : 'configured',
     dimensions: { width, height },
+    imageWidth: targetW,
+    imageHeight: targetH,
     questions: scanQuestions,
     scanScale,
   };
@@ -1068,17 +1097,19 @@ function scoreOf(grade) {
 const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
 async function annotateResult(result) {
   const img = await loadImg(result.preview);
+  const imageWidth = result.imageWidth || PAGE_W;
+  const imageHeight = result.imageHeight || PAGE_H;
   const c = document.createElement('canvas');
-  c.width = PAGE_W; c.height = PAGE_H;
+  c.width = imageWidth; c.height = imageHeight;
   const g = c.getContext('2d');
-  g.drawImage(img, 0, 0, PAGE_W, PAGE_H);
+  g.drawImage(img, 0, 0, imageWidth, imageHeight);
   g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineCap = 'round'; g.lineJoin = 'round';
   const GREEN = '#0f9d58', RED = '#d93025', AMBER = '#e08a00';
   (result.questions || []).forEach((q, i) => {
     const row = result.answers[i]; if (!row) return;
     const key = result.answerKey[i], y = q.y * PAGE_H;
     const R = Math.max(6, (q.drawRadius || q.radius / 0.54) * (result.scanScale || 1));
-    const px = o => q.xs[o] * PAGE_W;
+    const px = o => q.xs[o] * imageWidth;
     const ring = (o, color, w, dash) => { g.beginPath(); g.setLineDash(dash || []); g.lineWidth = w; g.strokeStyle = color; g.arc(px(o), y, R * 1.12, 0, Math.PI * 2); g.stroke(); g.setLineDash([]); };
     const s = Math.max(7, R * 0.55), cx = px(q.xs.length - 1) - R * 1.12 - s * 1.5;
     let kind, color;
@@ -1111,8 +1142,11 @@ async function composePdfPage(result) {
   g.textAlign = 'center'; g.fillStyle = '#117463'; g.font = 'bold 96px Tahoma, Arial, sans-serif';
   g.fillText(`${arabicNumber.format(sc.value)} / ${arabicNumber.format(sc.max)}`, 230, 85);
   g.fillStyle = '#6d7872'; g.font = '26px Tahoma, Arial, sans-serif'; g.fillText('درجة الطالب', 230, 170);
-  const ann = await annotateResult(result), h = H - 245, w = h * PAGE_W / PAGE_H;
-  g.drawImage(ann, (W - w) / 2, 232, w, h);
+  const ann = await annotateResult(result);
+  const maxW = W - 70, maxH = H - 270;
+  const fit = Math.min(maxW / ann.width, maxH / ann.height);
+  const w = ann.width * fit, h = ann.height * fit;
+  g.drawImage(ann, (W - w) / 2, 232 + (maxH - h) / 2, w, h);
   const b = atob(c.toDataURL('image/jpeg', 0.92).split(',')[1]), bytes = new Uint8Array(b.length);
   for (let i = 0; i < b.length; i++) bytes[i] = b.charCodeAt(i);
   return bytes;
@@ -1267,7 +1301,7 @@ function drawAnswerSheet(canvas, scale = 1) {
   // Frame is drawn after layout so it can hug the actual question grid.
   // كود التصميم: عموديًا في الهامش الأيسر بين علامتي التسجيل.
   context.save();
-  context.translate(34, (0.018 * PAGE_H + 0.982 * height) / 2);
+  context.translate(34, height / 2);
   context.rotate(-Math.PI / 2);
   context.direction = 'ltr';
   context.fillStyle = '#586a62';
@@ -1278,7 +1312,6 @@ function drawAnswerSheet(canvas, scale = 1) {
   if (layout.legacy) {
     context.strokeStyle = '#293b34';
     context.lineWidth = 2.5;
-    context.strokeRect(58, 58, width - 116, PAGE_H - 116);
     // Keep every legacy bubble center and size exactly aligned with the grading template.
     const headerY = (layout.gridY[0] + layout.gridY[1]) * PAGE_H / 2;
     context.fillStyle = '#173f35';
@@ -1305,7 +1338,6 @@ function drawAnswerSheet(canvas, scale = 1) {
     const { left, right, bottom } = layout.frame;
     context.strokeStyle = '#293b34';
     context.lineWidth = 2.5;
-    context.strokeRect(left, 48, right - left, bottom - 48);
     layout.cols.forEach(col => {
       context.fillStyle = '#eaf0eb';
       context.fillRect(col.left, top, col.right - col.left, headerH);
@@ -1337,9 +1369,9 @@ function drawAnswerSheet(canvas, scale = 1) {
 
   // Registration squares remain at the exact coordinates used by the scanner.
   context.fillStyle = '#000';
-  const markerSize = 36;
-  for (const [xRatio, yRatio] of [[0.026, 0.018], [0.974, 0.018], [0.026, 0.982], [0.974, 0.982]]) {
-    const markerY = yRatio < 0.5 ? yRatio * PAGE_H : yRatio * height;
+  const markerSize = 48;
+  for (const [xRatio, yRatio] of [[MARKER_RATIO.x, MARKER_RATIO.topY], [1 - MARKER_RATIO.x, MARKER_RATIO.topY], [MARKER_RATIO.x, MARKER_RATIO.bottomY], [1 - MARKER_RATIO.x, MARKER_RATIO.bottomY]]) {
+    const markerY = yRatio * height;
     context.fillRect(xRatio * width - markerSize / 2, markerY - markerSize / 2, markerSize, markerSize);
   }
 }
@@ -1689,7 +1721,7 @@ function checkLiveFrame() {
   const now = performance.now();
   if (now - lastScanAt >= accuracy.scanInterval) {
     lastScanAt = now;
-    const scale = Math.min(1, 640 / cameraVideo.videoWidth);
+    const scale = Math.min(1, 900 / cameraVideo.videoWidth);
     const width = Math.max(1, Math.round(cameraVideo.videoWidth * scale));
     const height = Math.max(1, Math.round(cameraVideo.videoHeight * scale));
     const probe = document.createElement('canvas');
@@ -1865,7 +1897,7 @@ async function processSource(source, live = false) {
       ...row,
       requiresReview: row.status === 'review' || row.status === 'ambiguous',
     }));
-    results.unshift({ id: nextResultId++, answers, preview: result.preview, answerKey: scanAnswerKey, format: scanFormat, questions: result.questions, scanScale: result.scanScale });
+    results.unshift({ id: nextResultId++, answers, preview: result.preview, imageWidth: result.imageWidth, imageHeight: result.imageHeight, answerKey: scanAnswerKey, format: scanFormat, questions: result.questions, scanScale: result.scanScale });
     renderResults();
     const message = result.layoutType === 'configured'
       ? 'تمت قراءة الورقة حسب إعداد النموذج الحالي. راجع أي إجابة مميّزة قبل اعتماد الدرجة.'
