@@ -542,7 +542,12 @@ function pickMarkerQuad(candidates, width, height, expectedAspect) {
     const parallelError = Math.hypot(cyc[0].x + cyc[2].x - cyc[1].x - cyc[3].x, cyc[0].y + cyc[2].y - cyc[1].y - cyc[3].y) / meanSide;
     if (parallelError > 0.45) continue;
     const density = group.reduce((sum, point) => sum + point.density, 0) / 4;
-    const score = (area / (width * height)) * sizeRatio * density * (1 - Math.min(0.9, parallelError)) * Math.min(opp1, opp2);
+    const wAvg = (sides[0] + sides[2]) / 2, hAvg = (sides[1] + sides[3]) / 2;
+    const aspectCost = expectedAspect
+      ? Math.min(Math.abs(Math.log((wAvg / hAvg) / expectedAspect)), Math.abs(Math.log((hAvg / wAvg) / expectedAspect)))
+      : 0;
+    if (aspectCost > 0.55) continue;
+    const score = Math.sqrt(area / (width * height)) * sizeRatio * sizeRatio * density * (1 - Math.min(0.9, parallelError)) * Math.min(opp1, opp2) * Math.exp(-3 * aspectCost);
     if (!best || score > best.score) best = { score, cyc };
   }
   if (!best) return null;
@@ -1934,6 +1939,15 @@ function cornersAreStable(detection, width, height) {
   return stableFrameCount >= accuracy.stableFrames;
 }
 
+function getVisibleVideoRect() {
+  // المعاينة تقص الفيديو لتملأ الإطار (cover)؛ نكشف ونلتقط داخل الجزء الظاهر فقط حتى لا تؤثر أجسام خارج الشاشة.
+  const vw = cameraVideo.videoWidth, vh = cameraVideo.videoHeight;
+  const stageW = Math.max(1, cameraStage.clientWidth), stageH = Math.max(1, cameraStage.clientHeight);
+  const fit = Math.max(stageW / vw, stageH / vh);
+  const sw = Math.min(vw, stageW / fit), sh = Math.min(vh, stageH / fit);
+  return { sx: (vw - sw) / 2, sy: (vh - sh) / 2, sw, sh };
+}
+
 function checkLiveFrame() {
   if (livePaused) { cameraFrame = requestAnimationFrame(checkLiveFrame); return; }
   if (!activeStream || cameraVideo.readyState < 2) {
@@ -1945,14 +1959,15 @@ function checkLiveFrame() {
   const now = performance.now();
   if (now - lastScanAt >= accuracy.scanInterval) {
     lastScanAt = now;
-    const scale = Math.min(1, 900 / cameraVideo.videoWidth);
-    const width = Math.max(1, Math.round(cameraVideo.videoWidth * scale));
-    const height = Math.max(1, Math.round(cameraVideo.videoHeight * scale));
+    const view = getVisibleVideoRect();
+    const scale = Math.min(1, 900 / view.sw);
+    const width = Math.max(1, Math.round(view.sw * scale));
+    const height = Math.max(1, Math.round(view.sh * scale));
     const probe = document.createElement('canvas');
     probe.width = width;
     probe.height = height;
     const context = probe.getContext('2d', { willReadFrequently: true });
-    context.drawImage(cameraVideo, 0, 0, width, height);
+    context.drawImage(cameraVideo, view.sx, view.sy, view.sw, view.sh, 0, 0, width, height);
     const detection = detectFiducials(context.getImageData(0, 0, width, height), width, height, expectedSheetAspect(formFormat));
     drawCameraOverlay(detection, width, height);
     if (needsNewSheet) {
@@ -2037,14 +2052,10 @@ function drawCameraOverlay(detection, probeWidth, probeHeight) {
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   context.clearRect(0, 0, stageWidth, stageHeight);
   if (!detection.ok) return;
-  const fitScale = Math.max(stageWidth / cameraVideo.videoWidth, stageHeight / cameraVideo.videoHeight);
-  const renderedWidth = cameraVideo.videoWidth * fitScale;
-  const renderedHeight = cameraVideo.videoHeight * fitScale;
-  const offsetX = (stageWidth - renderedWidth) / 2;
-  const offsetY = (stageHeight - renderedHeight) / 2;
+  // صورة الكشف هي الجزء الظاهر نفسه من الفيديو، فتطابق إحداثياتها الشاشة مباشرة.
   const points = ['tl', 'tr', 'br', 'bl'].map(name => ({
-    x: detection.corners[name].x / probeWidth * renderedWidth + offsetX,
-    y: detection.corners[name].y / probeHeight * renderedHeight + offsetY,
+    x: detection.corners[name].x / probeWidth * stageWidth,
+    y: detection.corners[name].y / probeHeight * stageHeight,
   }));
   context.save();
   context.strokeStyle = '#76e0ad';
@@ -2067,10 +2078,11 @@ function drawCameraOverlay(detection, probeWidth, probeHeight) {
 function captureFromCamera() {
   if (!activeStream || !cameraVideo.videoWidth) return;
   // Preserve the raw camera frame for scanning; only the live preview is cropped to fill the portrait stage.
+  const view = getVisibleVideoRect();
   const canvas = document.createElement('canvas');
-  canvas.width = cameraVideo.videoWidth;
-  canvas.height = cameraVideo.videoHeight;
-  canvas.getContext('2d').drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
+  canvas.width = Math.round(view.sw);
+  canvas.height = Math.round(view.sh);
+  canvas.getContext('2d').drawImage(cameraVideo, view.sx, view.sy, view.sw, view.sh, 0, 0, canvas.width, canvas.height);
   if (cameraMode === 'key') { stopCamera(); processAnswerKeySource(canvas); return; }
   livePaused = true;
   clearTimeout(cameraTimer);
