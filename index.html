@@ -784,7 +784,8 @@ function getQuestionLayout(format = {}) {
     left: Math.min(...cols.map(col => col.left)) - 28,
     right: Math.max(...cols.map(col => col.right)) + 28,
     top: 48,
-    bottom: Math.min(PAGE_H - 72, top + headerH + rowsMax * rowH - rowH / 2 + drawRadius + Math.max(22, rowH * 0.34)),
+    // هامش سفلي يعادل صفًا فارغًا بعد آخر دائرة، ثابت عبر جميع التخطيطات.
+    bottom: Math.min(PAGE_H - 72, top + headerH + rowsMax * rowH - rowH / 2 + drawRadius + Math.max(rowH, 100)),
   };
   const saved = format.savedTemplate;
   const sameFormat = saved && saved.layoutVersion === 3 && saved.questionCount === questionCount && saved.columns === columns && saved.optionCount === optionCount;
