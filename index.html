@@ -442,7 +442,161 @@ const MARK_TARGETS = {
   br: [PAGE_W * (1 - MARKER_RATIO.x), PAGE_H * MARKER_RATIO.bottomY],
 };
 
-function detectFiducials(imageData, width, height) {
+
+// ===== كشف الحدود الشامل: لا يشترط أن تملأ الورقة الشاشة، ويتحمل اختلاف الإضاءة والميلان =====
+function buildGray(imageData, length) {
+  const rgba = imageData.data;
+  const gray = new Uint8Array(length);
+  for (let i = 0, p = 0; i < length; i++, p += 4) gray[i] = (rgba[p] * 0.299 + rgba[p + 1] * 0.587 + rgba[p + 2] * 0.114) | 0;
+  return gray;
+}
+
+function adaptiveForeground(gray, width, height) {
+  // عتبة محلية: البكسل غامق إذا كان أغمق بوضوح من متوسط ما حوله (تتجاوز الظل والإضاءة غير المتساوية).
+  const stride = width + 1;
+  const integral = new Uint32Array(stride * (height + 1));
+  for (let y = 1; y <= height; y++) {
+    let rowSum = 0;
+    for (let x = 1; x <= width; x++) {
+      rowSum += gray[(y - 1) * width + (x - 1)];
+      integral[y * stride + x] = integral[(y - 1) * stride + x] + rowSum;
+    }
+  }
+  const half = Math.max(10, Math.round(Math.min(width, height) * 0.06));
+  const foreground = new Uint8Array(width * height);
+  for (let y = 0; y < height; y++) {
+    const y0 = Math.max(0, y - half), y1 = Math.min(height, y + half + 1);
+    for (let x = 0; x < width; x++) {
+      const x0 = Math.max(0, x - half), x1 = Math.min(width, x + half + 1);
+      const area = (x1 - x0) * (y1 - y0);
+      const sum = integral[y1 * stride + x1] - integral[y0 * stride + x1] - integral[y1 * stride + x0] + integral[y0 * stride + x0];
+      const mean = sum / area;
+      const g = gray[y * width + x];
+      foreground[y * width + x] = (g < mean * 0.66 && g < 165) ? 1 : 0;
+    }
+  }
+  return foreground;
+}
+
+function extractSquareCandidates(foreground, width, height) {
+  const length = width * height;
+  const visited = new Uint8Array(length);
+  const queue = new Int32Array(length);
+  const candidates = [];
+  const maxSide = Math.min(width, height) * 0.14;
+  for (let start = 0; start < length; start++) {
+    if (!foreground[start] || visited[start]) continue;
+    let head = 0, tail = 0;
+    queue[tail++] = start;
+    visited[start] = 1;
+    let minX = width, minY = height, maxX = 0, maxY = 0;
+    while (head < tail) {
+      const index = queue[head++];
+      const x = index % width;
+      const y = (index / width) | 0;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+      if (x > 0 && foreground[index - 1] && !visited[index - 1]) { visited[index - 1] = 1; queue[tail++] = index - 1; }
+      if (x + 1 < width && foreground[index + 1] && !visited[index + 1]) { visited[index + 1] = 1; queue[tail++] = index + 1; }
+      if (y > 0 && foreground[index - width] && !visited[index - width]) { visited[index - width] = 1; queue[tail++] = index - width; }
+      if (y + 1 < height && foreground[index + width] && !visited[index + width]) { visited[index + width] = 1; queue[tail++] = index + width; }
+    }
+    const boxW = maxX - minX + 1, boxH = maxY - minY + 1;
+    if (boxW < 5 || boxH < 5 || boxW > maxSide || boxH > maxSide) continue;
+    const density = tail / (boxW * boxH);
+    const ratio = boxW / boxH;
+    if (density < 0.55 || ratio < 0.6 || ratio > 1.67) continue;
+    // نتجاهل ما يلامس حافة الصورة لأنه غالبًا ظل أو طرف الطاولة وليس علامة كاملة.
+    if (minX <= 1 || minY <= 1 || maxX >= width - 2 || maxY >= height - 2) continue;
+    candidates.push({ x: (minX + maxX) / 2, y: (minY + maxY) / 2, width: boxW, height: boxH, density, area: tail });
+  }
+  return candidates;
+}
+
+function pickMarkerQuad(candidates, width, height, expectedAspect) {
+  const pool = candidates
+    .map(c => ({ ...c, rank: c.density * Math.sqrt(c.area) }))
+    .sort((a, b) => b.rank - a.rank)
+    .slice(0, 16);
+  if (pool.length < 4) return null;
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  let best = null;
+  for (let a = 0; a < pool.length - 3; a++) for (let b = a + 1; b < pool.length - 2; b++) for (let c = b + 1; c < pool.length - 1; c++) for (let d = c + 1; d < pool.length; d++) {
+    const group = [pool[a], pool[b], pool[c], pool[d]];
+    const sizes = group.map(point => (point.width + point.height) / 2);
+    const sizeRatio = Math.min(...sizes) / Math.max(...sizes);
+    if (sizeRatio < 0.45) continue;
+    const cx = group.reduce((sum, point) => sum + point.x, 0) / 4;
+    const cy = group.reduce((sum, point) => sum + point.y, 0) / 4;
+    const cyc = [...group].sort((p, q) => Math.atan2(p.y - cy, p.x - cx) - Math.atan2(q.y - cy, q.x - cx));
+    if (!isConvexQuad(cyc)) continue;
+    const area = polygonArea(cyc);
+    if (area < width * height * 0.05) continue;
+    const sides = [dist(cyc[0], cyc[1]), dist(cyc[1], cyc[2]), dist(cyc[2], cyc[3]), dist(cyc[3], cyc[0])];
+    const opp1 = Math.min(sides[0], sides[2]) / Math.max(sides[0], sides[2]);
+    const opp2 = Math.min(sides[1], sides[3]) / Math.max(sides[1], sides[3]);
+    if (opp1 < 0.55 || opp2 < 0.55) continue;
+    const meanSide = (sides[0] + sides[1] + sides[2] + sides[3]) / 4;
+    const parallelError = Math.hypot(cyc[0].x + cyc[2].x - cyc[1].x - cyc[3].x, cyc[0].y + cyc[2].y - cyc[1].y - cyc[3].y) / meanSide;
+    if (parallelError > 0.45) continue;
+    const density = group.reduce((sum, point) => sum + point.density, 0) / 4;
+    const score = (area / (width * height)) * sizeRatio * density * (1 - Math.min(0.9, parallelError)) * Math.min(opp1, opp2);
+    if (!best || score > best.score) best = { score, cyc };
+  }
+  if (!best) return null;
+  // تحديد أي نقطة هي الزاوية العلوية اليسرى: نختار الترتيب الذي يطابق نسبة الورقة المتوقعة.
+  const cyc = best.cyc;
+  let choice = 0, choiceCost = Infinity;
+  for (let r = 0; r < 4; r++) {
+    const tl = cyc[r], tr = cyc[(r + 1) % 4], br = cyc[(r + 2) % 4], bl = cyc[(r + 3) % 4];
+    const w = (dist(tl, tr) + dist(bl, br)) / 2;
+    const h = (dist(tl, bl) + dist(tr, br)) / 2;
+    const aspectCost = expectedAspect ? Math.abs(Math.log((w / h) / expectedAspect)) : 0;
+    const cornerCost = (tl.x + tl.y) / (width + height) * 0.2;
+    const cost = aspectCost + cornerCost;
+    if (cost < choiceCost) { choiceCost = cost; choice = r; }
+  }
+  return { tl: cyc[choice], tr: cyc[(choice + 1) % 4], br: cyc[(choice + 2) % 4], bl: cyc[(choice + 3) % 4] };
+}
+
+function detectFiducials(imageData, width, height, expectedAspect = 0) {
+  const length = width * height;
+  if (length < 100) return { ok: false, reason: 'الصورة صغيرة جدًا.' };
+  const gray = buildGray(imageData, length);
+  let allCandidates = [];
+  const passes = [
+    () => adaptiveForeground(gray, width, height),
+    () => { const f = new Uint8Array(length); for (let i = 0; i < length; i++) f[i] = gray[i] < 105 ? 1 : 0; return f; },
+    () => { const f = new Uint8Array(length); for (let i = 0; i < length; i++) f[i] = gray[i] < 140 ? 1 : 0; return f; },
+  ];
+  for (const makeForeground of passes) {
+    const candidates = extractSquareCandidates(makeForeground(), width, height);
+    if (candidates.length > allCandidates.length) allCandidates = candidates;
+    const corners = pickMarkerQuad(candidates, width, height, expectedAspect);
+    if (corners) return { ok: true, corners, candidates, profile: MARKER_RATIO };
+  }
+  // احتياط: الطريقة القديمة المعتمدة على موضع العلامات داخل الصورة.
+  const legacy = detectFiducialsByProfile(imageData, width, height);
+  if (legacy.ok) return legacy;
+  return {
+    ok: false,
+    reason: allCandidates.length >= 4
+      ? 'ظهرت علامات لكنها غير متناسقة؛ ثبّت الهاتف فوق الورقة وأظهر العلامات الأربع كاملة.'
+      : 'لم تظهر العلامات الأربع؛ ابعد الهاتف قليلًا وأظهر زوايا الورقة بإضاءة جيدة.',
+    candidates: allCandidates,
+  };
+}
+
+function expectedSheetAspect(format = {}) {
+  const layout = getQuestionLayout(format);
+  const w = layout.legacy ? PAGE_W : Math.max(1, layout.sheetWidth || PAGE_W);
+  const h = layout.legacy ? PAGE_H : Math.max(1, Math.min(PAGE_H, Math.ceil(layout.frame.bottom + 34)));
+  return (w * (1 - 2 * MARKER_RATIO.x)) / (h * (MARKER_RATIO.bottomY - MARKER_RATIO.topY));
+}
+
+function detectFiducialsByProfile(imageData, width, height) {
   let first;
   // دعم البطاقات الجديدة والبطاقات المطبوعة من الإصدارات السابقة.
   const profiles = [
@@ -966,8 +1120,29 @@ async function processImageSource(source, format = {}) {
   context.drawImage(bitmap, 0, 0, width, height);
   if (isBitmap && bitmap.close) bitmap.close();
   const sourceImage = context.getImageData(0, 0, width, height);
-  const detection = detectFiducials(sourceImage, width, height);
+  const aspect = expectedSheetAspect(format);
+  let detection = detectFiducials(sourceImage, width, height, aspect);
+  let detectionScale = 1;
+  if (!detection.ok) {
+    // إعادة المحاولة بدقة أقل: تخفف الضجيج وتساعد مع الصور الكبيرة أو غير الحادة.
+    const smallScale = 900 / Math.max(width, height);
+    if (smallScale < 1) {
+      const smallW = Math.max(1, Math.round(width * smallScale)), smallH = Math.max(1, Math.round(height * smallScale));
+      const small = document.createElement('canvas');
+      small.width = smallW; small.height = smallH;
+      const smallCtx = small.getContext('2d', { willReadFrequently: true });
+      smallCtx.drawImage(canvas, 0, 0, smallW, smallH);
+      const retry = detectFiducials(smallCtx.getImageData(0, 0, smallW, smallH), smallW, smallH, aspect);
+      if (retry.ok) { detection = retry; detectionScale = 1 / smallScale; }
+    }
+  }
   if (!detection.ok) throw new Error(detection.reason);
+  if (detectionScale !== 1) {
+    for (const key of Object.keys(detection.corners)) {
+      const c = detection.corners[key];
+      detection.corners[key] = { ...c, x: c.x * detectionScale, y: c.y * detectionScale, width: c.width * detectionScale, height: c.height * detectionScale };
+    }
+  }
   const layout = getQuestionLayout(format);
   const targetW = layout.legacy ? PAGE_W : Math.max(1, Math.round(layout.sheetWidth || PAGE_W));
   const targetH = layout.legacy ? PAGE_H : Math.max(1, Math.round(Math.min(PAGE_H, Math.ceil(layout.frame.bottom + 34))));
@@ -1058,9 +1233,9 @@ let livePaused = false, needsNewSheet = false, liveOpen = null;
 let toastTimer = 0;
 
 const CAPTURE_ACCURACY = {
-  fast: { stableFrames: 2, movement: 0.03, markerFrames: 1, delay: 300, scanInterval: 300 },
-  balanced: { stableFrames: 4, movement: 0.018, markerFrames: 2, delay: 900, scanInterval: 600 },
-  precise: { stableFrames: 7, movement: 0.01, markerFrames: 3, delay: 1300, scanInterval: 750 },
+  fast: { stableFrames: 2, movement: 0.04, markerFrames: 1, delay: 250, scanInterval: 250 },
+  balanced: { stableFrames: 3, movement: 0.03, markerFrames: 2, delay: 450, scanInterval: 350 },
+  precise: { stableFrames: 5, movement: 0.018, markerFrames: 3, delay: 800, scanInterval: 450 },
 };
 
 const answerKeyEl = document.getElementById('answerKey');
@@ -1742,7 +1917,7 @@ function checkLiveFrame() {
     probe.height = height;
     const context = probe.getContext('2d', { willReadFrequently: true });
     context.drawImage(cameraVideo, 0, 0, width, height);
-    const detection = detectFiducials(context.getImageData(0, 0, width, height), width, height);
+    const detection = detectFiducials(context.getImageData(0, 0, width, height), width, height, expectedSheetAspect(formFormat));
     drawCameraOverlay(detection, width, height);
     if (needsNewSheet) {
       if (!detection.ok) needsNewSheet = false;
