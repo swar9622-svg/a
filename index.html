@@ -2264,14 +2264,14 @@ function renderResults() {
     preview.alt = 'معاينة مؤقتة للورقة بعد تقويم المنظور';
     const reviewGrid = document.createElement('div');
     reviewGrid.className = 'answer-review';
-    result.answers.forEach((row, index) => reviewGrid.append(createAnswerCell(result, row, index, result.answerKey)));
+    result.answers.forEach((row, index) => { if (row.requiresReview) reviewGrid.append(createAnswerCell(result, row, index, result.answerKey)); });
     if (grade.review) {
       const note = document.createElement('p');
       note.className = 'review-note';
       note.textContent = 'القيمة (؟) تعني قراءة غير مؤكدة. اختر الإجابة من القائمة أو اتركها فارغة إذا لم تُحدّد إجابة.';
       reviewGrid.append(note);
     }
-    body.append(preview, reviewGrid);
+    if (grade.review) body.append(preview, reviewGrid); else body.append(preview);
 
     const actions = document.createElement('div');
     actions.className = 'result-actions';
